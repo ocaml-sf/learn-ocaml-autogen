@@ -26,4 +26,4 @@ clean :
 	$(OCB) -clean
 
 clear : clean
-	rm -f $(TARGETS) $(addsuffix .ml, $(FILES))
+	rm -f $(addsuffix .ml, $(FILES))
