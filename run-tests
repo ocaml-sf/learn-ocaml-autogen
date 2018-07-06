@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+DIRS=tests
+SOLPREFIX=sol_
+MAPPREFIX=mapper_
+INPUT=input.ml
+
+echo "Generating files..."
+for D in $DIRS/*/; do
+  for NAME in prelude prepare solution template test; do
+    OUTPUT=$D$NAME.ml
+    SOLUTION=$D$SOLPREFIX$NAME.ml
+    # There can be test directories without every file solution.
+    if [ -e $SOLUTION ]; then
+      ocamlfind ppx_tools/rewriter ./$MAPPREFIX$NAME.native $D$INPUT | \
+        # We don’t want trailing whitespaces.
+        sed -E 's/[ \t]+$//' > $OUTPUT
+      # We want templates to look nice, thus we add spacing.
+      if [ $NAME = template ]; then
+        sed -Ei 's/(= ".*")/\1 ;;/; /;;/G' $OUTPUT
+      fi
+      ocamlfind ppx_tools/dumpast $SOLUTION > solution.ml
+      ocamlfind ppx_tools/dumpast $OUTPUT > output.ml
+      COUNT=$(diff -y --suppress-common-lines solution.ml output.ml | wc -l)
+      # There is one difference between the diffs, the name of the file written
+      # by dumpast.
+      if [ $COUNT = "1" ]; then
+        echo "$OUTPUT........OK"
+      else
+        echo "$OUTPUT........FAILED"
+      fi
+      rm -f solution.ml output.ml
+    fi
+  done
+done
