@@ -16,11 +16,11 @@ let rec remove_type_annotations = function
         Location.error ~loc "Not a function or lacking type annotations."))
 
 let solution_structure_mapper mapper s =
-  let filter = function
+  let keep_let_definitions = function
     | {pstr_desc = Pstr_value _} -> true
     | _ -> false
   in
-  let map = function
+  let remove_type_annotations_in_expression = function
     | {pstr_desc = Pstr_value (rec_flag,
       [{pvb_pat; pvb_expr; pvb_attributes; pvb_loc}])} ->
         let e = remove_type_annotations pvb_expr in
@@ -28,22 +28,8 @@ let solution_structure_mapper mapper s =
         Str.value rec_flag [vb]
     | x -> x
   in
-  List.filter filter s |> List.map map
-
-(*
-  let rec aux s acc =
-    match s with
-    (* Keep let definitions. *)
-    | {pstr_desc = Pstr_value (rec_flag,
-      [{pvb_pat; pvb_expr; pvb_attributes; pvb_loc}])} :: s' ->
-        let e = remove_type_annotations pvb_expr in
-        let vb = {pvb_pat; pvb_expr = e; pvb_attributes; pvb_loc} in
-        aux s' (Str.value rec_flag [vb] :: acc)
-    (* Ignore the rest *)
-    | _ :: s' -> aux s' acc
-    | [] -> acc
-  in List.rev (aux s [])
-*)
+  List.filter keep_let_definitions s
+    |> List.map remove_type_annotations_in_expression
 
 let solution_mapper _argv =
   { default_mapper with
