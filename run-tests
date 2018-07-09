@@ -5,6 +5,10 @@ SOLPREFIX=sol_
 MAPPREFIX=mapper_
 INPUT=input.ml
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
 echo "Generating files..."
 for D in $DIRS/*/; do
   for NAME in prelude prepare solution template test; do
@@ -25,9 +29,9 @@ for D in $DIRS/*/; do
       # There is one difference between the diffs, the name of the file written
       # by dumpast.
       if [ $COUNT = "1" ]; then
-        echo "$OUTPUT........OK"
+        echo -e "$OUTPUT........${GREEN}OK${NC}"
       else
-        echo "$OUTPUT........FAILED"
+        echo -e "$OUTPUT........${RED}FAILED${NC}"
       fi
       rm -f solution.ml output.ml
     fi

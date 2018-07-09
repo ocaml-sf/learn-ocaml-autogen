@@ -19,18 +19,16 @@ let rec get_rid_of_body = function
         Location.error ~loc "Not a function or lacking type annotations."))
 
 let template_structure_mapper mapper s =
-  let rec aux s acc =
-    match s with
-    (* Keep let definitions. *)
+  let remove_type_annotations_and_body = function
     | {pstr_desc = Pstr_value (_,
-      [{pvb_pat; pvb_expr; pvb_attributes; pvb_loc}])} :: s' ->
-        let e = get_rid_of_body pvb_expr in
+      [{pvb_pat; pvb_expr; pvb_attributes; pvb_loc}])} ->
+        let e = Mapper.remove_type_annotations false pvb_expr in
         let vb = {pvb_pat; pvb_expr = e; pvb_attributes; pvb_loc} in
-        aux s' (Str.value Nonrecursive [vb] :: acc)
-    (* Ignore the rest. *)
-    | x :: s' -> aux s' acc
-    | [] -> acc
-  in List.rev (aux s [])
+        Str.value Nonrecursive [vb]
+    | x -> x
+  in
+  List.filter Mapper.keep_let_definitions s
+    |> List.map remove_type_annotations_and_body
 
 let template_mapper _argv =
   { default_mapper with
