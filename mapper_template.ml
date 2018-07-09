@@ -13,7 +13,7 @@ let rec get_rid_of_body = function
   | {pexp_loc = loc; pexp_attributes = attrs;
       pexp_desc = Pexp_constraint _} ->
         Exp.constant ~loc ~attrs (
-          Pconst_string ("Replace this string with your answer.", None))
+          Pconst_string ("Replace this string by your implementation.", None))
   | {pexp_loc = loc} ->
       raise (Location.Error (
         Location.error ~loc "Not a function or lacking type annotations."))
