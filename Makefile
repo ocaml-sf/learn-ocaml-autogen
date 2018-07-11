@@ -2,6 +2,7 @@ FILES = prelude prepare solution template test
 SUFFIX = .native
 SOLPREFIX = sol_
 MAPPREFIX = mapper_
+ASTPREFIX = ptree_
 TARGETS = $(addsuffix $(SUFFIX), $(addprefix $(MAPPREFIX), $(FILES)))
 
 INPUT = input.ml
@@ -28,3 +29,4 @@ clean :
 
 clear : clean
 	rm -f $(foreach X, $(DIRS), $(foreach Y, $(FILES), $X$Y.ml))
+	rm -f $(foreach X, $(DIRS), $(foreach Y, $(FILES), $X$(ASTPREFIX)$Y.ml))

@@ -25,6 +25,12 @@ let rec remove_type_annotations keep_body = function
       raise (Location.Error (
         Location.error ~loc "Not a function or lacking type annotations."))
 
+let remove_type_annotations_in_vbs keep_body =
+  let fetch_e_and_remove {pvb_pat; pvb_expr; pvb_attributes; pvb_loc} =
+    let e = remove_type_annotations keep_body pvb_expr in
+    {pvb_pat; pvb_expr = e; pvb_attributes; pvb_loc}
+  in List.map fetch_e_and_remove
+
 let keep_in_struct extension_name mapper s =
   let keep_correct_extensions = function
     | {pstr_desc = Pstr_extension (({txt}, _), _)} when txt = extension_name ->
