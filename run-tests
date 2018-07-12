@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+DIRS=tests
+SOLPREFIX=sol_
+MAPPREFIX=mapper_
+INPUT=input.ml
+PTREE=ptree_
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+FAILED=false
+
+echo "Generating files..."
+for D in $DIRS/*/; do
+  for NAME in prelude prepare solution template test; do
+    OUTPUT=$D$NAME.ml
+    SOLUTION=$D$SOLPREFIX$NAME.ml
+    PTREE_OUTPUT=$D$PTREE$NAME.ml
+    PTREE_SOLUTION=$D$PTREE$SOLPREFIX$NAME.ml
+    # There can be test directories without every file solution.
+    if [ -e $SOLUTION ]; then
+      ocamlfind ppx_tools/rewriter ./$MAPPREFIX$NAME.native $D$INPUT | \
+        # We don’t want trailing whitespaces.
+        sed -E 's/[ \t]+$//' > $OUTPUT
+      # We want templates to look nice, thus we add spacing.
+      if [ $NAME = template ]; then
+        RECAND=$(grep "^and\s" $OUTPUT | wc -l)
+        if [ $RECAND = 0 ]; then
+          sed -Ei 's/(= ".*")/\1 ;;/; /;;/G' $OUTPUT
+        fi
+      fi
+      ocamlfind ppx_tools/dumpast $OUTPUT > $PTREE_OUTPUT
+      ocamlfind ppx_tools/dumpast $SOLUTION > $PTREE_SOLUTION
+      COUNT=$(diff -y --suppress-common-lines $PTREE_OUTPUT $PTREE_SOLUTION \
+        | wc -l)
+      # There is one difference between the diffs, the name of the file written
+      # by dumpast.
+      if [ $COUNT = "1" ]; then
+        echo -e "$OUTPUT........${GREEN}OK${NC}"
+        rm -f $PTREE_OUTPUT $PTREE_SOLUTION
+      else
+        echo -e "$OUTPUT........${RED}FAILED${NC}"
+        FAILED=true
+      fi
+    fi
+  done
+done
+
+if [ "$FAILED" = true ]; then
+  echo Some tests failed. Their ASTs are avaible to check in their directories.
+fi
