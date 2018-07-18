@@ -3,15 +3,14 @@ open Ast_helper
 open Asttypes
 open Parsetree
 
-let solution_structure_mapper mapper s =
+let solution_structure_mapper mapper =
   let remove_type_annotations_in_expression = function
     | {pstr_desc = Pstr_value (rec_flag, vbs)} ->
         let vbs' = Mapper.remove_type_annotations_in_vbs true vbs in
         Str.value rec_flag vbs'
     | x -> x
   in
-  List.filter Mapper.keep_let_definitions s
-    |> List.map remove_type_annotations_in_expression
+  Mapper.map_to_let_definitions remove_type_annotations_in_expression
 
 let solution_mapper _argv =
   { default_mapper with

@@ -3,9 +3,29 @@ open Ast_helper
 open Asttypes
 open Parsetree
 
-let keep_let_definitions = function
-  | {pstr_desc = Pstr_value _} -> true
+let is_sampler_function = function
+  | {pvb_pat = {ppat_desc = Ppat_var {txt = fun_name}}} ->
+      begin
+        try String.sub fun_name 0 7 = "sample_"
+        with Invalid_argument _ -> false
+      end
+  | {pvb_pat = {ppat_desc = Ppat_extension _}} -> true
   | _ -> false
+
+let remove_samplers = function
+  | {pstr_desc = Pstr_value (rec_flag, vbs)} ->
+      let no_sampler = List.filter (fun x -> not (is_sampler_function x)) vbs in
+      Str.value rec_flag no_sampler
+  | x -> x
+
+let keep_let_definitions = function
+  | {pstr_desc = Pstr_value (_, vbs)} -> vbs <> []
+  | _ -> false
+
+let map_to_let_definitions f s =
+  List.map remove_samplers s
+  |> List.filter keep_let_definitions
+  |> List.map f
 
 (* The type of the function is only used in grading, not in the solution nor
  * the template. *)
