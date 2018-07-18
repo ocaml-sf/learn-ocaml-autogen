@@ -10,7 +10,7 @@ open Report
 
 ## Prelude and prepare
 
-Prelade and prepare functions are written almost as-if. You just write your
+Prelude and prepare functions are written almost as-if. You just write your
 function, with an added `%prelude`, or `%prepare` appended to the definition
 keyword. This works in particular on `let`, `type` and `module`.
 
@@ -48,20 +48,20 @@ let rec fibonacci (n : int) : int =
   else fibonacci (n - 1) + fibonacci (n - 2)
 
 let foo (x : int) (y : float) : float =
-  (float_of_int x) + sqrt y
+  float_of_int x +. sqrt y
 ```
 
-These functions do not need to be annotated with an extension (like
-`%prelude`). Every function that is not annotated will be parsed into
-`test.ml`, `template.ml` and `solution.ml`.
+These functions do not need to be annotated with an *extension* (like
+`%prelude`). Every function that is not annotated will be parsed as a solution
+into `test.ml`, `template.ml` and `solution.ml`.
 
-It is important to note that each argument’s type must be annotated, as well as
-the function’s.
+It is important to note that *each argument’s type must be annotated*, as well
+as the function’s.
 
 ## Solution
 
-Inside solution.ml are the functions to test against. The file contains the
-same functions as in the input file, without type annotations.
+Inside solution.ml are the functions to test the student against. The file
+contains the same functions as in the input file, without type annotations.
 
 ```ocaml
 (* solution.ml *)
@@ -79,7 +79,7 @@ let foo x y =
 ## Template
 
 Inside template.ml are the same functions, without type annotations and without
-the body, that must be written by the student. Notice that the rec indication
+the body, which must be filled by the student. Notice that the `rec` indication
 is removed from the definiton, to avoid giving away to much informations.
 
 ```ocaml
@@ -92,6 +92,10 @@ let foo x y = "Replace this string by your implementation."
 ```
 
 ## Test
+
+The file below is generated from the functions defined in the input file. For
+general understanding of `test.ml` files, please check [learn-ocaml
+tutorials](https://github.com/ocaml-sf/learn-ocaml/blob/master/docs/howto-write-exercises.md).
 
 ```ocaml
 (* test.ml *)
@@ -122,17 +126,12 @@ let () =
   fun () -> [exercise_fact; exercise_fibonacci; exercise_foo]
 ```
 
-The file above is generated from the functions defined in the input file. For
-general understanding of test.ml files, please check [learn-ocaml
-tutorials](https://github.com/ocaml-sf/learn-ocaml/blob/master/docs/howto-write-exercises.md).
-
 We use the `test_function_n_against_solution` function to test the student’s
 answer against our solutions. `n` is the number of arguments of the function
-and is automatically deduced from the type. Watch out, though, that learn-ocaml
-autogen does not support functions with more than four arguments. With more
-arguments, we are forced to use the generic test function. Its use would add
-complexity into an autogen input file. %ty extension is generated from the type
-annotations.
+and is automatically deduced from the type. Watch out, though, that Learn-OCaml
+autogen does not support functions with more than four arguments, because it
+would add complexity to autogen’s input files. The `%ty` extension is generated
+from the type annotations.
 
 Tests are done upon ten generated inputs. You can change this amount by
 updating the `gen` argument in the generated file. You can also add inputs that
@@ -140,9 +139,9 @@ will always be tested in the list next to it.
 
 ## More on input files
 
-- Order. The order of every element of the file (prelude and prepare
-  definitions, solutions) is of no importance. Although, we advise regrouping
-  definitions according to their destination to avoid confusion.
+- The order of every element of the file (prelude and prepare definitions,
+  solutions) is of no importance. Still, we advise regrouping definitions
+  according to their destination file to avoid confusion.
 - As you probably noticed, only solution functions need to have type
-  annotations. This is in fact used for the generation of a %ty extension in
-  the test file.
+  annotations. This is used to create the `%ty` argument in the test function,
+  and therefore not useful anywhere else.

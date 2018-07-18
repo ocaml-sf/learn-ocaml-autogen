@@ -1,6 +1,6 @@
 # Learn-OCaml autogen
 
-This is Learn-OCaml autogen, an utility designed to provide a simpler way to
+This is Learn-OCaml autogen, a utility designed to provide a simpler way to
 write exercises for the [Learn-OCaml](https://github.com/ocaml-sf/learn-ocaml)
 platform.
 
