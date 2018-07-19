@@ -7,4 +7,5 @@ platform.
 ## Howtos
 
 - [How to use Learn-OCaml autogen?](doc/usage.md)
-- [How to write an exercise with Learn-OCaml autogen?](doc/write_ex.md)
+- [How to write an exercise with Learn-OCaml
+  autogen?](doc/how-to-write-an-exercise-with-autogen.md)
