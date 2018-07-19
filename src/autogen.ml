@@ -9,24 +9,15 @@ let mk_mapper file =
 let mk_output dir file =
   Filename.concat dir (file ^ ".ml")
 
-let make_file_nicer file =
+(* template.ml is what the student is going to write into. Therefore, we want
+ * to modify a bit the output of the pretty-printer to add a white line between
+ * each function of the exercise. We also remove trailing whitespaces. *)
+let add_linebreaks file =
   let _ = Sys.command ("sed -Ei 's/[ \\t]+$//' " ^ file) in
   let basename = Filename.basename file in
-(*
-  let with_mutually_rec_functions =
-    Sys.command ("grep '^and\\s' " ^ file ^ " | wc -l && exit $?") > 0 in
-*)
-  let add_spacing = (
-    if basename = "template.ml" || basename = "solution.ml"
-    (*&& not with_mutually_rec_functions *)
-    then
-(*       "s/(= \".*\")/\\1 ;;/; /;;/G" *)
-       "/$/G"
-    else
-      "")
- in
-(*   Printf.printf "sed -Ei '%s' %s" add_spacing file *)
-  ignore (Sys.command (Printf.sprintf "sed -Ei '%s' %s" add_spacing file))
+  if basename = "template.ml" || basename = "solution.ml" then
+    ignore (Sys.command ("sed -Ei '/$/G' " ^ file))
+  else ()
 
 let generate_file exercise file =
   let input = mk_input exercise in
@@ -38,7 +29,7 @@ let generate_file exercise file =
   let exit_value = Sys.command ocf in
   if (exit_value = 0) then (
     Printf.printf "File %s generated.\n" output;
-    make_file_nicer output)
+    add_linebreaks output)
   else
     Printf.printf "File %s could not be generated. Exited with value %d.\n"
     output exit_value

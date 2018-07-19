@@ -1,4 +1,4 @@
-# How to write an exercise?
+# How to write an exercise with Learn-OCaml autogen?
 
 Every input file begins with the required library calls, needed by the test
 function.
@@ -10,11 +10,19 @@ open Report
 
 ## Prelude and prepare
 
-Prelude and prepare functions are written almost as-if. You just write your
-function, with an added `%prelude`, or `%prepare` appended to the definition
-keyword. This works in particular on `let`, `type` and `module`.
+In Learn-OCaml, it is possible to define code that must be loaded before the
+student’s answer inside a `prelude.ml` file. We may also *insert code after the
+prelude when the answer is graded* by putting it in `prepare.ml`. Both of these
+files contain generic OCaml code.
+
+Inside `input.ml`, expressions written for prelude and prepare are written
+almost as-if. You just write your definition or directive, introduced by
+`let%prelude` or `let%prepare`. This works in particular on `let`, `type`,
+`module` or `open`.
 
 ```ocaml
+open%prelude String
+
 let%prelude pi = 3.14159261
 
 let%prepare map_incr = List.map (fun x -> x + 1)
@@ -26,6 +34,8 @@ As an output, we have:
 
 ```ocaml
 (* prelude.ml *)
+open String
+
 let pi = 3.14159261
 
 let vector_length x y = sqrt (x *. x +. y *. y)
@@ -60,7 +70,7 @@ as the function’s.
 
 ## Solution
 
-Inside solution.ml are the functions to test the student against. The file
+Inside `solution.ml` are the functions to test the student against. The file
 contains the same functions as in the input file, without type annotations.
 
 ```ocaml
@@ -79,7 +89,7 @@ let foo x y =
 ## Template
 
 Inside template.ml are the same functions, without type annotations and without
-the body, which must be filled by the student. Notice that the `rec` indication
+the body, which must be filled by the student. Notice that the `rec` annotation
 is removed from the definiton, to avoid giving away to much informations.
 
 ```ocaml
@@ -133,15 +143,32 @@ autogen does not support functions with more than four arguments, because it
 would add complexity to autogen’s input files. The `%ty` extension is generated
 from the type annotations.
 
-Tests are done upon ten generated inputs. You can change this amount by
+Tests are done upon 10 generated inputs. You can change this amount by
 updating the `gen` argument in the generated file. You can also add inputs that
 will always be tested in the list next to it.
 
-## More on input files
+## About type annotation
 
-- The order of every element of the file (prelude and prepare definitions,
-  solutions) is of no importance. Still, we advise regrouping definitions
-  according to their destination file to avoid confusion.
-- As you probably noticed, only solution functions need to have type
-  annotations. This is used to create the `%ty` argument in the test function,
-  and therefore not useful anywhere else.
+It is important that you remember to annotate solution functions. This allows
+the generation of the `%ty` extension in the arguments of the test function.
+The style supported is
+```ocaml
+let f (arg_1 : type_1) (arg_2 : type_2) … (arg_n : type_n) : return_type = …
+```
+There is no need to give type annotation to prelude and prepare functions. If
+you wish to do so, be aware that these annotations will be transcribed as such
+inside `prelude.ml` or `prepare.ml`.
+
+## Remarks
+
+The order of the expressions in the file matters only between expressions with
+the same goal. Prelude expressions will be written in the same order as in
+`input.ml` inside `prelude.ml`. Same for `prepare.ml` and solution functions.
+But between files, order does not matter. Prelude, prepare and solution
+expressions can be mixed together. We could put every prelude function at the
+end of the file, and prepare at the beginning.
+
+We advise to keep a constant style of ordering. For example, always having
+prelude and prepare expressions at the beginning of `input.ml`. Most
+importantly, it is a good idea to keep expressions together according to their
+destination files. This avoids confusion on bigger files.
