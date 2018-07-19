@@ -11,9 +11,9 @@ open Report
 ## Prelude and prepare
 
 In Learn-OCaml, it is possible to define code that must be loaded before the
-student’s answer inside a `prelude.ml` file. We may also *insert code after the
-prelude when the answer is graded* by putting it in `prepare.ml`. Both of these
-files contain generic OCaml code.
+student’s answer inside a `prelude.ml` file. We may also hide code to the
+student by putting it in `prepare.ml`. Both of these files contain generic
+OCaml code.
 
 Inside `input.ml`, expressions written for prelude and prepare are written
 almost as-if. You just write your definition or directive, introduced by
