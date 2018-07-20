@@ -25,8 +25,7 @@ let get_types pexp =
     | {pexp_desc = Pexp_constraint (_, {ptyp_desc = ty})} ->
         (List.rev args, ty)
     | {pexp_loc = loc} ->
-        raise (Location.Error (
-          Location.error ~loc "Not enough type annotations."))
+        raise Location.(Error (error ~loc "Not enough type annotations."))
   in aux pexp []
 
 let mk_ty_extension args result =
@@ -41,7 +40,6 @@ let sampler_for f samplers =
     let s = List.assoc f samplers in
     [(Labelled "sampler", s)]
   with Not_found -> []
-(*   option_map (fun s -> (Labelled "sample", s)) sampler_exp *)
 
 (* Create a test for function fun_name of type represented by ty_extension. *)
 let mk_test_function which_test_against ty_extension fun_name =
@@ -88,37 +86,33 @@ let mk_main_function function_names =
           (Nolabel, Exp.fun_ Nolabel None (Pat.construct (mk_lid "()") None) (
             mk_exercises_list function_names))])])])
 
-let test_function_of_vb vb =
+let test_function_of_vb rec_flag vb =
   match vb with
   | {pvb_pat = {ppat_desc = Ppat_var {txt = fun_name}}; pvb_expr = pexp} ->
-      (* Mutually recursive samplers? *)
-      let is_sampler_function =
-        try String.sub fun_name 0 7 = "sample_"
-        with Invalid_argument _ -> false in
-      if is_sampler_function then
-        Str.value Nonrecursive [vb]
-      else
-        let (args, return_type) = get_types pexp in
-        let nb_of_args = List.length args in
-        (* Basic test functions are defined for up to four parameters. For more
-         * parameters we need a more complicated function, which use is harder
-         * to encode as an AST. Need for this function does not come often
-         * anyway.
-         * *)
-        if nb_of_args > 4 then
-          raise (Location.Error (
-            Location.error (Printf.sprintf "Too many parameters for function
-              %s: 4 maximum accepted for automatic generation." fun_name )));
-        let which_test_against = Printf.sprintf
-          "test_function_%s_against_solution" (string_of_int nb_of_args) in
-        let args_core_type = List.map Typ.mk args in
-        let return_core_type = Typ.mk return_type in
-        let ty_extension = mk_ty_extension args_core_type return_core_type in
-        function_names := fun_name :: !function_names;
-        mk_test_function which_test_against ty_extension fun_name
-  | _ -> raise (Location.Error (Location.error "Not a function."))
+      assert (not (Mapper.is_sampler vb));
+      let (args, return_type) = get_types pexp in
+      let nb_of_args = List.length args in
+      (* Basic test functions are defined for up to four parameters. For more
+       * parameters we need a more complicated function, which use is harder
+       * to encode as an AST. Need for this function does not come often
+       * anyway.
+       * *)
+      if nb_of_args > 4 then
+        raise Location.(Error (
+          error (Printf.sprintf "Too many parameters for function \
+            %s: 4 maximum accepted for automatic generation." fun_name)));
+      let which_test_against = Printf.sprintf
+        "test_function_%s_against_solution" (string_of_int nb_of_args) in
+      let args_core_type = List.map Typ.mk args in
+      let return_core_type = Typ.mk return_type in
+      let ty_extension = mk_ty_extension args_core_type return_core_type in
+      function_names := fun_name :: !function_names;
+      mk_test_function which_test_against ty_extension fun_name
+  | _ -> raise Location.(Error (error "Not a function."))
 
-let fetch_sampler = function
+(* Remembers samplers of the kind let[%sampler f] = e for use in f’s test
+ * function. *)
+let save_sampler = function
   | {pvb_pat = {ppat_desc = Ppat_extension ({txt = "sampler"}, PStr [pstr])};
     pvb_expr = e} ->
       begin match pstr with
@@ -126,30 +120,35 @@ let fetch_sampler = function
         pexp_desc = Pexp_ident {txt = Longident.Lident f}}, _)} ->
           samplers := (f, e) :: !samplers
       | {pstr_loc = loc} ->
-          raise (Location.Error (
-            Location.error ~loc "Sampler extensions expect a function name."))
+          raise Location.(Error (
+            error ~loc "Sampler extensions expect a function name."))
       end
   | {pvb_loc = loc} ->
-      raise (Location.Error (Location.error ~loc "Not a sampler extension."))
+      raise Location.(Error (error ~loc "Not a sampler extension."))
 
-let is_sampler_extension = function
-  | {pvb_pat = {ppat_desc = Ppat_extension ({txt = "sampler"}, _)}} -> true
-  | _ -> false
+let split_samplers vbs =
+  let anonymous_samplers = List.filter Mapper.is_sampler_extension vbs
+  and global_samplers = List.filter Mapper.is_sampler_function vbs
+  and no_samplers = List.filter (fun x -> not (Mapper.is_sampler x)) vbs in
+  (anonymous_samplers, global_samplers, no_samplers)
 
 let test_structure_mapper mapper s =
   let rec replace s acc =
     match s with
     (* We replace a function by the corresponding test. *)
-    | {pstr_desc = Pstr_value (_, vbs)} :: s' ->
-        let samps = List.filter is_sampler_extension vbs in
-        List.iter fetch_sampler samps;
-        let not_sampler_extension x = not (is_sampler_extension x) in
-        let functions = List.filter not_sampler_extension vbs in
-        if functions = [] then
-          replace s' acc
-        else
-          let vbs' = List.rev_map test_function_of_vb functions in
-          replace s' (vbs' @ acc)
+    | {pstr_desc = Pstr_value (rec_flag, vbs)} :: s' ->
+        (* If case of a value definition, we have to remove local sampler
+         * definitions, keep global samplers as if and create tests functions
+         * for each solution function.*)
+        let (anonymous_samp, global_samp, no_samp) = split_samplers vbs in
+        List.iter save_sampler anonymous_samp;
+        let pstr_samplers = Str.value rec_flag global_samp in
+        let pstr_tests = List.rev_map (test_function_of_vb rec_flag) no_samp in
+        (* Inside a mutually recursive definition, samplers are taken apart and
+         * moved before the test function. *)
+        let pstr_l = pstr_tests @ [pstr_samplers] in
+        let pstrs = List.filter Mapper.keep_let_definitions pstr_l in
+        replace s' (pstrs @ acc)
     (* We keep open declarations in the test (in particular "open Test_lib" and
      * "open Report"). We also keep type declarations, as they are used to
      * define samplers. *)

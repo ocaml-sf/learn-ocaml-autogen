@@ -3,18 +3,24 @@ open Ast_helper
 open Asttypes
 open Parsetree
 
+let is_sampler_extension = function
+  | {pvb_pat = {ppat_desc = Ppat_extension ({txt = "sampler"}, _)}} -> true
+  | _ -> false
+
 let is_sampler_function = function
   | {pvb_pat = {ppat_desc = Ppat_var {txt = fun_name}}} ->
       begin
         try String.sub fun_name 0 7 = "sample_"
         with Invalid_argument _ -> false
       end
-  | {pvb_pat = {ppat_desc = Ppat_extension _}} -> true
-  | _ -> false
+  | x -> false
+
+let is_sampler x =
+  is_sampler_extension x || is_sampler_function x
 
 let remove_samplers = function
   | {pstr_desc = Pstr_value (rec_flag, vbs)} ->
-      let no_sampler = List.filter (fun x -> not (is_sampler_function x)) vbs in
+      let no_sampler = List.filter (fun x -> not (is_sampler x)) vbs in
       Str.value rec_flag no_sampler
   | x -> x
 
@@ -42,8 +48,8 @@ let rec remove_type_annotations keep_body = function
           Exp.constant ~loc ~attrs (Pconst_string (
             "Replace this string by your implementation.", None))
   | {pexp_loc = loc} ->
-      raise (Location.Error (
-        Location.error ~loc "Not a function or lacking type annotations."))
+      raise Location.(Error (
+        error ~loc "Not a function or lacking type annotations."))
 
 let remove_type_annotations_in_vbs keep_body =
   let fetch_e_and_remove {pvb_pat; pvb_expr; pvb_attributes; pvb_loc} =
