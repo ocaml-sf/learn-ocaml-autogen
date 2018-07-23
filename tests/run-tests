@@ -22,7 +22,7 @@ for D in $DIRS/*/; do
     PTREE_SOLUTION=$D$PTREE$SOLPREFIX$NAME.ml
     # There can be test directories without every file solution.
     if [ -e $SOLUTION ]; then
-      $BDIR/autogen $D -- $NAME > /dev/null
+      $BDIR/autogen $D -o $NAME > /dev/null
       ocamlfind ppx_tools/dumpast $OUTPUT > $PTREE_OUTPUT
       ocamlfind ppx_tools/dumpast $SOLUTION > $PTREE_SOLUTION
       COUNT=$(diff -y --suppress-common-lines $PTREE_OUTPUT $PTREE_SOLUTION \
