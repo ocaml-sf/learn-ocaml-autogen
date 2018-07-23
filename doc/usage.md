@@ -21,7 +21,9 @@ The command `learn-ocaml-autogen circle`, ran from `exercises`, will generate
 every file needed by Learn-OCaml: `prelude.ml`, `prepare.ml`, `solution.ml`,
 `template.ml` and `test.ml`. You can run Learn-OCaml and verify that the
 exercise was correctly generated. If you want to change its content, modify
-`input.ml` and run `learn-ocaml autogen circle` again.
+`input.ml` and run `learn-ocaml autogen circle` again. Of course, you can also
+modify directly the output files, be beware that if you run autogen again, your
+changes will be deleted.
 
 You can also use Learn-OCaml autogen to generate files for several exercises by
 using `learn-ocaml-autogen` with as many arguments as you wish. For example:
@@ -29,10 +31,5 @@ using `learn-ocaml-autogen` with as many arguments as you wish. For example:
 learn-ocaml-autogen circle recursivity sum_types
 ```
 
-To generate only a specific subset of the usual files, add `--` after the
-exercises names. Then add the kind of output files you want. It should be a
-subset of `prelude`, `prepare`, `solution`, `template` and `test`, which are
-the files needed by Learn-OCaml. For example:
-```
-learn-ocaml-autogen circle recursivity sum_types -- test template
-```
+There are several options available. They are shown by running
+`learn-ocaml-autogen --help`.
