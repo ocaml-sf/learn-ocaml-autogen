@@ -77,6 +77,14 @@ module Args = struct
     `P "$(tname) generates all files needed by Learn-OCaml for the listed
     exercises. See https://github.com/ocaml-sf/learn-ocaml-autogen/doc for
     more informations on how to write exercises with Learn-OCaml autogen.";
+(*
+    `S "EXAMPLES";
+    `P "$(b, learn-ocaml-autogen easy -i a.ml -n test.ml)";
+    `P "You have an exercise called `easy', your input file is called
+    `easy/a.ml' and you want to generate everything but `easy/test.ml'.";
+    `P "$(b, learn-ocaml-autogen easy -o test -o prelude)";
+    `P "You want to generate only `easy/test.ml' and `easy/prelude.ml'.";
+*)
     `S Manpage.s_bugs;
     `P "If you find any bugs, please report them to
     https://gitub.com/ocaml-sf/learn-ocaml-autogen/issues." ]
