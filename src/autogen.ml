@@ -13,15 +13,18 @@ let mk_output dir file =
  * to modify a bit the output of the pretty-printer to add a white line between
  * each function of the exercise. We also remove trailing whitespaces. *)
 let change_template_fill output template_fill =
-  let _ = Sys.command ("sed -Ei 's/[ \\t]+$//' " ^ output) in
+  if Sys.command ("sed -Ei 's/[ \\t]+$//' " ^ output) <> 0 then
+    Printf.eprintf "Could not remove trailing whitespaces in file %s." output;
   let basename = Filename.basename output in
-  if basename = "template.ml" then
+  if basename = "template.ml" then begin
     let default_fill = "Replace this string by your implementation." in
     let sed =
       Printf.sprintf "sed -i 's/%s/%s/; /%s/G' %s"
       default_fill template_fill template_fill output in
-    ignore (Sys.command sed)
-  else ()
+    if Sys.command sed <> 0 then
+      Printf.eprintf "Could not change template. Using \"%s\" instead."
+      default_fill;
+  end
 
 let generate_file exercise input template_fill file =
   let input = mk_input exercise input in
@@ -30,13 +33,11 @@ let generate_file exercise input template_fill file =
   let ocf =
     Printf.sprintf "ocamlfind ppx_tools/rewriter %s %s > %s" mapper input
     output in
-  let exit_value = Sys.command ocf in
-  if (exit_value = 0) then (
+  if (Sys.command ocf = 0) then (
     Printf.printf "File %s generated.\n" output;
     change_template_fill output template_fill)
   else
-    Printf.printf "File %s could not be generated. Exited with value %d.\n"
-    output exit_value
+    Printf.printf "File %s could not be generated." output
 
 let main exercises input files not_files template_fill =
   let files = List.filter (fun x -> not (List.mem x not_files)) files in
