@@ -110,18 +110,27 @@ let test_function_of_vb rec_flag vb =
       mk_test_function which_test_against ty_extension fun_name
   | _ -> raise Location.(Error (error "Not a function."))
 
-(* Remembers samplers of the kind let[%sampler f] = e for use in f’s test
+let get_lident = function
+  | {pexp_desc = Pexp_ident {txt = Longident.Lident x}} -> x
+  | {pexp_loc = loc} ->
+      raise Location.(Error (
+        error ~loc "Error while parsing: identifier expected."))
+
+(* Remember samplers of the kind let[%sampler f] = e for use in f’s test
  * function. *)
 let save_sampler = function
   | {pvb_pat = {ppat_desc = Ppat_extension ({txt = "sampler"}, PStr [pstr])};
     pvb_expr = e} ->
+      let make_assoc pexp = (get_lident pexp, e) in
       begin match pstr with
-      | {pstr_desc = Pstr_eval ({
-        pexp_desc = Pexp_ident {txt = Longident.Lident f}}, _)} ->
-          samplers := (f, e) :: !samplers
+      | {pstr_desc = Pstr_eval ({pexp_desc = Pexp_ident _} as pexp, _)} ->
+          samplers := make_assoc pexp :: !samplers
+      | {pstr_desc = Pstr_eval ({pexp_desc = Pexp_apply (pexp, pexps)}, _)} ->
+          let pexps = List.map snd pexps in
+          samplers := List.map make_assoc (pexp :: pexps) @ !samplers
       | {pstr_loc = loc} ->
           raise Location.(Error (
-            error ~loc "Sampler extensions expect a function name."))
+            error ~loc "Sampler extensions expect one or more function names."))
       end
   | {pvb_loc = loc} ->
       raise Location.(Error (error ~loc "Not a sampler extension."))
