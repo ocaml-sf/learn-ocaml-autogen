@@ -9,6 +9,7 @@ let samplers = ref []
 let gen_nb = 10
 
 let mk_lid s = {txt = Longident.Lident s; loc = !default_loc}
+let mk_lid_exp s = Exp.ident (mk_lid s)
 let mk_str_loc s = {txt = s; loc = !default_loc}
 
 (* pexp should represent a function. *)
@@ -41,23 +42,27 @@ let sampler_for f samplers =
     [(Labelled "sampler", s)]
   with Not_found -> []
 
+(* Construct a list as an AST *)
+let ast_of_list l =
+  let mk_list_element acc x =
+    Exp.construct (mk_lid "::") (Some (Exp.tuple [x; acc])) in
+  List.fold_left
+    mk_list_element (Exp.construct (mk_lid "[]") None) (List.rev l)
+
 (* Create a test for function fun_name of type represented by ty_extension. *)
 let mk_test_function which_test_against ty_extension fun_name =
   let fun_name_exp = Exp.constant (Pconst_string (fun_name, None)) in
   let sampler = sampler_for fun_name !samplers in
+  let default_text = [
+    Exp.construct (mk_lid "Text") (Some (
+      Exp.constant (Pconst_string ("Function:", None))));
+    Exp.construct (mk_lid "Code") (Some (fun_name_exp))] in
   Str.value Nonrecursive [
     Vb.mk (Pat.var (mk_str_loc ("exercise_" ^ fun_name))) (
       Exp.construct (mk_lid "Section") (Some (
         Exp.tuple [
-          Exp.construct (mk_lid "::") (Some (
-            Exp.tuple [
-              Exp.construct (mk_lid "Text") (Some (
-                Exp.constant (Pconst_string ("Function:", None))));
-              Exp.construct (mk_lid "::") (Some (
-                Exp.tuple [
-                  Exp.construct (mk_lid "Code") (Some (fun_name_exp));
-                  Exp.construct (mk_lid "[]") None]))]));
-          Exp.apply (Exp.ident (mk_lid which_test_against)) ([
+          ast_of_list default_text;
+          Exp.apply (mk_lid_exp which_test_against) ([
             (Nolabel, ty_extension);
             (Nolabel, fun_name_exp)]
             @ sampler @
@@ -65,26 +70,20 @@ let mk_test_function which_test_against ty_extension fun_name =
               Pconst_integer (string_of_int gen_nb, None)));
             (Nolabel, Exp.construct (mk_lid "[]") None)])])))]
 
-let rec mk_exercises_list = function
-  | ex :: exercises ->
-      Exp.construct (mk_lid "::") (Some (
-        Exp.tuple [
-          Exp.ident (mk_lid ("exercise_" ^ ex));
-          mk_exercises_list exercises]))
-  | [] -> Exp.construct (mk_lid "[]") None
-
 (* Each function has a separate test, called exercise_"fun_name". The main
  * function puts them alltogether. *)
 let mk_main_function function_names =
+  let exercises_names =
+    List.map (fun x -> mk_lid_exp ("exercise_" ^ x)) function_names in
   Str.value Nonrecursive ([
     Vb.mk (Pat.construct (mk_lid "()") None)
-      (Exp.apply (Exp.ident (mk_lid "@@")) [
+      (Exp.apply (mk_lid_exp "@@") [
         (Nolabel, Exp.ident (mk_lid "set_result"));
-        (Nolabel, Exp.apply (Exp.ident (mk_lid "@@")) [
-          (Nolabel, Exp.apply (Exp.ident (mk_lid "ast_sanity_check")) [
-            (Nolabel, Exp.ident (mk_lid "code_ast"))]);
+        (Nolabel, Exp.apply (mk_lid_exp "@@") [
+          (Nolabel, Exp.apply (mk_lid_exp "ast_sanity_check") [
+            (Nolabel, mk_lid_exp "code_ast")]);
           (Nolabel, Exp.fun_ Nolabel None (Pat.construct (mk_lid "()") None) (
-            mk_exercises_list function_names))])])])
+            ast_of_list exercises_names))])])])
 
 let test_function_of_vb rec_flag vb =
   match vb with
