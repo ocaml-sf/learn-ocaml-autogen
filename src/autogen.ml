@@ -37,7 +37,7 @@ let generate_file exercise input template_fill file =
     Printf.printf "File %s generated.\n" output;
     change_template_fill output template_fill)
   else
-    Printf.printf "File %s could not be generated." output
+    Printf.eprintf "File %s could not be generated." output
 
 let main exercises input files not_files template_fill =
   let files = List.filter (fun x -> not (List.mem x not_files)) files in
