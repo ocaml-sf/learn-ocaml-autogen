@@ -8,13 +8,11 @@ SUFFIX = .native
 SOLPREFIX = sol_
 MAPPREFIX = mapper_
 ASTPREFIX = ptree_
-#TARGETS = $(addsuffix $(SUFFIX), $(addprefix $(BDIR)/$(MAPPREFIX), $(FILES)))
 TARGETS = $(addsuffix $(SUFFIX), $(addprefix $(MAPPREFIX), $(FILES)))
-
 
 NAME = autogen
 EXE = $(NAME)$(SUFFIX)
-BEXE = $(BDIR)/$(EXE)
+BEXE = $(BDIR)/$(NAME)
 
 OCB_LIBS = -package compiler-libs.common -package cmdliner
 OCB_DIR_FLAGS = -I $(SDIR)
@@ -28,7 +26,7 @@ OCF = ocamlfind ppx_tools/rewriter
 
 all : $(TARGETS)
 	$(OCB) $(EXE)
-	ln -sf $(EXE) $(NAME)
+	mkdir -p $(BDIR) && mv $(EXE) $(BEXE); mv *$(SUFFIX) $(BDIR)
 
 %.native : $(SDIR)/%.ml
 	$(OCB) $@
@@ -38,11 +36,11 @@ test : all
 
 clean :
 	$(OCB) -clean
-	rm $(NAME)
+	rmdir $(BDIR)
 
 tests_clean :
-	rm -f $(foreach X, $(TESTS), $(foreach Y, $(FILES), $X$Y.ml))
-	rm -f $(foreach X, $(TESTS), $(foreach Y, $(FILES), $X$(ASTPREFIX)$Y.ml))
-	rm -f $(foreach X, $(TESTS), $(foreach Y, $(FILES), $X$(ASTPREFIX)$(SOLPREFIX)$Y.ml))
+	@rm -f $(foreach X, $(TESTS), $(foreach Y, $(FILES), $X$Y.ml))
+	@rm -f $(foreach X, $(TESTS), $(foreach Y, $(FILES), $X$(ASTPREFIX)$Y.ml))
+	@rm -f $(foreach X, $(TESTS), $(foreach Y, $(FILES), $X$(ASTPREFIX)$(SOLPREFIX)$Y.ml))
 
 clear : clean tests_clean

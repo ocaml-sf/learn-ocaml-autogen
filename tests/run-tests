@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 DIRS=tests
-BDIR=.
+BDIR=bin
 SOLPREFIX=sol_
 MAPPREFIX=mapper_
 INPUT=input.ml
