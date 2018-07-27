@@ -57,7 +57,7 @@ let remove_type_annotations_in_vbs keep_body =
     {pvb_pat; pvb_expr = e; pvb_attributes; pvb_loc}
   in List.map fetch_e_and_remove
 
-let keep_in_struct extension_name mapper s =
+let keep_in_struct extension_name s =
   let keep_correct_extensions = function
     | {pstr_desc = Pstr_extension (({txt}, _), _)} when txt = extension_name ->
         true
@@ -75,5 +75,5 @@ let keep_in_struct extension_name mapper s =
  * extension txt *)
 let mk_mapper txt _argv =
   { default_mapper with
-    structure = keep_in_struct txt
+    structure = (fun mapper s -> keep_in_struct txt s)
   }
