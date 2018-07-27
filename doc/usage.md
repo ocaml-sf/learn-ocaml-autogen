@@ -31,5 +31,5 @@ using `learn-ocaml-autogen` with as many arguments as you wish. For example:
 learn-ocaml-autogen circle recursivity sum_types
 ```
 
-There are several options available. They are shown by running
-`learn-ocaml-autogen --help`.
+There are several options available. You can in particular choose which files
+to generate. Options are shown by running `learn-ocaml-autogen --help`.
