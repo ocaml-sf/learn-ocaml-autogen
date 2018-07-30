@@ -9,6 +9,9 @@ let mk_mapper file =
 let mk_output dir file =
   Filename.concat dir (file ^ ".ml")
 
+let mk_meta_json dir =
+  Filename.concat dir "meta.json"
+
 let exec ?(fatal=false) cmd error_msg =
   if Sys.command cmd <> 0 then
     begin
@@ -29,22 +32,48 @@ let insert_line_between_each_functions output template_fill =
     default_fill template_fill template_fill output in
   exec cmd "Could not change template. Using \"%s\" instead."
 
-let change_template_fill output template_fill =
+let change_template_fill output template_fill file =
   remove_trailing_whitespaces output;
-  let basename = Filename.basename output in
-  if basename = "template.ml" then
+  if file = "template.ml" then
     insert_line_between_each_functions output template_fill
 
+let indent_meta_json meta_json =
+  let error_msg =
+    Printf.sprintf "Could not indent %s. Tests might fail." meta_json in
+  (* TODO this is gnu-specific. *)
+  let spread_brackets = "sed -i 's/{\"/{\\n\"/; s/}/\\n}/' " ^ meta_json in
+  let break_lines = "sed -i 's/,\"/,\\n\"/g' " ^ meta_json in
+  let stick_back_lists =
+    Printf.sprintf "awk '/\\[/{printf \"%%s\",$0;next} 1' %s | tee %s > /dev/null"
+    meta_json meta_json in
+  let indent = "sed -i '/^[^{}]/{s/^/  /}' " ^ meta_json in
+  List.iter (fun cmd -> exec cmd error_msg)
+    [spread_brackets; break_lines; stick_back_lists; indent]
+
+let handle_generated_file exercise output template_fill file =
+  Printf.printf "File %s generated.\n" (
+    if file = "meta" then (
+      (* HACK It seems that we can’t use command-line arguments and parsing of
+       * the command-line doesn’t work, so we move meta.json manually. *)
+      let ex_meta_json = mk_meta_json exercise in
+      Sys.rename "meta.json" ex_meta_json;
+      indent_meta_json ex_meta_json;
+      Sys.remove output;
+      ex_meta_json)
+    else (
+      change_template_fill output template_fill file;
+      output)
+  )
+
 let generate_file exercise input template_fill file =
-  let input = mk_input exercise input in
   let mapper = mk_mapper file in
+  let input = mk_input exercise input in
   let output = mk_output exercise file in
   let ocf =
-    Printf.sprintf "ocamlfind ppx_tools/rewriter %s %s > %s" mapper input
+    Printf.sprintf "ocamlfind ppx_tools/rewriter %s %s -o %s" mapper input
     output in
-  if (Sys.command ocf = 0) then (
-    Printf.printf "File %s generated.\n" output;
-    change_template_fill output template_fill)
+  if (Sys.command ocf = 0) then
+    handle_generated_file exercise output template_fill file
   else
     Printf.eprintf "File %s could not be generated." output
 
@@ -67,15 +96,15 @@ module Args = struct
 
   let files =
     value & opt_all string ["prelude"; "prepare"; "solution"; "template";
-    "test"] & info ["o"; "output"] ~doc:
-      "Must be one of `prelude', `prepare', `solution', `template' or `test'.
-      Generate only the corresponding file. Can be repeated to give a subset of
-      the usual files."
+    "test"; "meta"] & info ["o"; "output"] ~doc:
+      "Must be one of `prelude', `prepare', `solution', `template', `test' or
+      `meta'. Generate only the corresponding file. Can be repeated to give a
+      subset of the usual files."
 
   let not_files =
     value & opt_all string [] & info ["n"; "no_output"] ~doc:
-      "Must be one of `prelude', `prepare', `solution', `template' or `test'.
-      Don't generate the corresponding file. Can be repeated."
+      "Must be one of `prelude', `prepare', `solution', `template', `test' or
+      `meta'. Don't generate the corresponding file. Can be repeated."
 
   let template_fill =
     value & opt string "Replace this string by your implementation." & info
@@ -87,14 +116,6 @@ module Args = struct
     `P "$(tname) generates all files needed by Learn-OCaml for the listed
     exercises. See https://github.com/ocaml-sf/learn-ocaml-autogen/doc for
     more informations on how to write exercises with Learn-OCaml autogen.";
-(*
-    `S "EXAMPLES";
-    `P "$(b, learn-ocaml-autogen easy -i a.ml -n test.ml)";
-    `P "You have an exercise called `easy', your input file is called
-    `easy/a.ml' and you want to generate everything but `easy/test.ml'.";
-    `P "$(b, learn-ocaml-autogen easy -o test -o prelude)";
-    `P "You want to generate only `easy/test.ml' and `easy/prelude.ml'.";
-*)
     `S Manpage.s_bugs;
     `P "If you find any bugs, please report them to
     https://gitub.com/ocaml-sf/learn-ocaml-autogen/issues." ]

@@ -13,6 +13,24 @@ NC='\033[0m'
 
 FAILED=false
 
+gen_meta_json()
+{
+  MD=$1
+  MFILE="meta.json"
+  MOUTPUT=$MD$MFILE
+  MSOLUTION=$MD$SOLPREFIX$MFILE
+  if [ -e $MSOLUTION ]; then
+    $BDIR/autogen $D -o meta > /dev/null
+    MCOUNT=$(diff -wq $MOUTPUT $MSOLUTION)
+    if [ "$?" = "0" ]; then
+      echo -e "$MOUTPUT........${GREEN}OK${NC}"
+    else
+      echo -e "$MOUPUT........${RED}FAILED${NC}"
+      FAILED=true
+    fi
+  fi
+}
+
 echo "Generating files..."
 for D in $DIRS/*/; do
   for NAME in prelude prepare solution template test; do
@@ -38,6 +56,7 @@ for D in $DIRS/*/; do
       fi
     fi
   done
+  gen_meta_json $D
 done
 
 if [ "$FAILED" = true ]; then

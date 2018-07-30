@@ -57,7 +57,7 @@ let remove_type_annotations_in_vbs keep_body =
     {pvb_pat; pvb_expr = e; pvb_attributes; pvb_loc}
   in List.map fetch_e_and_remove
 
-let keep_in_struct extension_name s =
+let keep_unwrapped_extensions extension_name s =
   let keep_correct_extensions = function
     | {pstr_desc = Pstr_extension (({txt}, _), _)} when txt = extension_name ->
         true
@@ -71,9 +71,9 @@ let keep_in_struct extension_name s =
   List.filter keep_correct_extensions s
     |> List.fold_left unwrap_extension []
 
-(* Generates a mapper who ignores all expressions but the ones with the
+(* Generates a mapper that ignores all expressions but the ones with the
  * extension txt *)
 let mk_mapper txt _argv =
   { default_mapper with
-    structure = (fun mapper s -> keep_in_struct txt s)
+    structure = (fun mapper s -> keep_unwrapped_extensions txt s)
   }
