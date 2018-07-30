@@ -12,6 +12,12 @@ this tutorial. Detailed instructions to write an input file are available
 open Test_lib
 open Report
 
+let%meta stars = 1
+let%meta title = "Diameter"
+let%meta short_description = "Compute the diameter of a circle"
+let%meta identifier = "diameter"
+let%meta authors = [("Sarah Smith", "sarahs@mail.org")]
+
 let%prelude pi = 3.14159265
 
 let diameter (r : float) : float = 2. *. pi *. r
@@ -19,11 +25,11 @@ let diameter (r : float) : float = 2. *. pi *. r
 
 The command `learn-ocaml-autogen circle`, ran from `exercises`, will generate
 every file needed by Learn-OCaml: `prelude.ml`, `prepare.ml`, `solution.ml`,
-`template.ml` and `test.ml`. You can run Learn-OCaml and verify that the
-exercise was correctly generated. If you want to change its content, modify
-`input.ml` and run `learn-ocaml autogen circle` again. Of course, you can also
-modify directly the output files, be beware that if you run autogen again, your
-changes will be deleted.
+`template.ml`, `test.ml` and `meta.json`. You can run Learn-OCaml and verify
+that the exercise was correctly generated. If you want to change its content,
+modify `input.ml` and run `learn-ocaml autogen circle` again. Of course, you
+can also modify directly the output files, be beware that if you run autogen
+again, your changes will be deleted.
 
 You can also use Learn-OCaml autogen to generate files for several exercises by
 using `learn-ocaml-autogen` with as many arguments as you wish. For example:

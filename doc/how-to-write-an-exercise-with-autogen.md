@@ -168,14 +168,15 @@ applicable.
 - `stars`: int
 - `title`: string
 - `short_description`: string
-- `identifier`: string (default=name of the directory)
+- `identifier`: string
 - `authors`: string list list
 
 And here is a example of metadata definition inside `input.ml`.
 ```ocaml
 let%meta stars = 5
 let%meta title = "Very hard exercise"
-let%meta title = "I bet you can’t do it!"
+let%meta short_description = "I bet you can’t do it!"
+let%meta identifier = "very_hard"
 let%meta authors = [["Me"; "me@myself.com"]]
 ```
 
@@ -189,7 +190,8 @@ let f (arg_1 : type_1) (arg_2 : type_2) … (arg_n : type_n) : return_type = …
 ```
 There is no need to give type annotation to prelude and prepare functions. If
 you wish to do so, be aware that these annotations will be transcribed as such
-inside `prelude.ml` or `prepare.ml`.
+inside `prelude.ml` or `prepare.ml`. Autogen will not accept annotations on
+metadata fields definitions.
 
 ## Remarks
 
