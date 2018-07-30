@@ -9,22 +9,31 @@ let mk_mapper file =
 let mk_output dir file =
   Filename.concat dir (file ^ ".ml")
 
-(* template.ml is what the student is going to write into. Therefore, we want
- * to modify a bit the output of the pretty-printer to add a white line between
- * each function of the exercise. We also remove trailing whitespaces. *)
+let exec ?(fatal=false) cmd error_msg =
+  if Sys.command cmd <> 0 then
+    begin
+      Printf.eprintf "%s" error_msg;
+      if fatal then Printf.printf "Stopping the program.";
+      exit 1
+    end
+
+let remove_trailing_whitespaces output =
+  let error_msg =
+    Printf.sprintf "Could not remove trailing whitespaces in file %s." output in
+  exec ("sed -Ei 's/[ \\t]+$//' " ^ output) error_msg
+
+let insert_line_between_each_functions output template_fill =
+  let default_fill = "Replace this string by your implementation." in
+  let cmd =
+    Printf.sprintf "sed -i 's/%s/%s/; /%s/G' %s"
+    default_fill template_fill template_fill output in
+  exec cmd "Could not change template. Using \"%s\" instead."
+
 let change_template_fill output template_fill =
-  if Sys.command ("sed -Ei 's/[ \\t]+$//' " ^ output) <> 0 then
-    Printf.eprintf "Could not remove trailing whitespaces in file %s." output;
+  remove_trailing_whitespaces output;
   let basename = Filename.basename output in
-  if basename = "template.ml" then begin
-    let default_fill = "Replace this string by your implementation." in
-    let sed =
-      Printf.sprintf "sed -i 's/%s/%s/; /%s/G' %s"
-      default_fill template_fill template_fill output in
-    if Sys.command sed <> 0 then
-      Printf.eprintf "Could not change template. Using \"%s\" instead."
-      default_fill;
-  end
+  if basename = "template.ml" then
+    insert_line_between_each_functions output template_fill
 
 let generate_file exercise input template_fill file =
   let input = mk_input exercise input in
@@ -37,7 +46,7 @@ let generate_file exercise input template_fill file =
     Printf.printf "File %s generated.\n" output;
     change_template_fill output template_fill)
   else
-    Printf.printf "File %s could not be generated." output
+    Printf.eprintf "File %s could not be generated." output
 
 let main exercises input files not_files template_fill =
   let files = List.filter (fun x -> not (List.mem x not_files)) files in
@@ -60,13 +69,13 @@ module Args = struct
     value & opt_all string ["prelude"; "prepare"; "solution"; "template";
     "test"] & info ["o"; "output"] ~doc:
       "Must be one of `prelude', `prepare', `solution', `template' or `test'.
-      Generate only this file. Can be repeated to give a subset of the usual
-      files."
+      Generate only the corresponding file. Can be repeated to give a subset of
+      the usual files."
 
   let not_files =
     value & opt_all string [] & info ["n"; "no_output"] ~doc:
       "Must be one of `prelude', `prepare', `solution', `template' or `test'.
-      Don't generate this file. Can be repeated."
+      Don't generate the corresponding file. Can be repeated."
 
   let template_fill =
     value & opt string "Replace this string by your implementation." & info

@@ -1,0 +1,13 @@
+{
+  "learnocaml_version" : "2",
+  "kind"               : "exercise",
+  "stars"              : 3,
+  "title"              : "Blimey! this is a really trivial exercise",
+  "short_description"  : "Identity function",
+  "identifier"         : "meta",
+  "authors"            : [["Me", "me@myself.fr"]],
+  "focus"              : [],
+  "requirements"       : [],
+  "forward_exercises"  : [],
+  "backward_exercises" : []
+}
