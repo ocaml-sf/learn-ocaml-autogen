@@ -8,9 +8,3 @@ let minus (x : int) (y : int) : int = x - y
 let times (x : int) (y : int) : int = x * y
 
 let divide (x : int) (y : int) : int = x / y
-
-module Int = struct
-  let x = 3
-end
-
-type a = B | C

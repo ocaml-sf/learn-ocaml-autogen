@@ -3,9 +3,35 @@ open Ast_helper
 open Asttypes
 open Parsetree
 
-let keep_let_definitions = function
-  | {pstr_desc = Pstr_value _} -> true
+let is_sampler_extension = function
+  | {pvb_pat = {ppat_desc = Ppat_extension ({txt = "sampler"}, _)}} -> true
   | _ -> false
+
+let is_sampler_function = function
+  | {pvb_pat = {ppat_desc = Ppat_var {txt = fun_name}}} ->
+      begin
+        try String.sub fun_name 0 7 = "sample_"
+        with Invalid_argument _ -> false
+      end
+  | x -> false
+
+let is_sampler x =
+  is_sampler_extension x || is_sampler_function x
+
+let remove_samplers = function
+  | {pstr_desc = Pstr_value (rec_flag, vbs)} ->
+      let no_sampler = List.filter (fun x -> not (is_sampler x)) vbs in
+      Str.value rec_flag no_sampler
+  | x -> x
+
+let keep_let_definitions = function
+  | {pstr_desc = Pstr_value (_, vbs)} -> vbs <> []
+  | _ -> false
+
+let map_to_let_definitions f s =
+  List.map remove_samplers s
+  |> List.filter keep_let_definitions
+  |> List.map f
 
 (* The type of the function is only used in grading, not in the solution nor
  * the template. *)
@@ -22,8 +48,8 @@ let rec remove_type_annotations keep_body = function
           Exp.constant ~loc ~attrs (Pconst_string (
             "Replace this string by your implementation.", None))
   | {pexp_loc = loc} ->
-      raise (Location.Error (
-        Location.error ~loc "Not a function or lacking type annotations."))
+      raise Location.(Error (
+        error ~loc "Not a function or lacking type annotations."))
 
 let remove_type_annotations_in_vbs keep_body =
   let fetch_e_and_remove {pvb_pat; pvb_expr; pvb_attributes; pvb_loc} =
@@ -31,7 +57,7 @@ let remove_type_annotations_in_vbs keep_body =
     {pvb_pat; pvb_expr = e; pvb_attributes; pvb_loc}
   in List.map fetch_e_and_remove
 
-let keep_in_struct extension_name mapper s =
+let keep_in_struct extension_name s =
   let keep_correct_extensions = function
     | {pstr_desc = Pstr_extension (({txt}, _), _)} when txt = extension_name ->
         true
@@ -49,5 +75,5 @@ let keep_in_struct extension_name mapper s =
  * extension txt *)
 let mk_mapper txt _argv =
   { default_mapper with
-    structure = keep_in_struct txt
+    structure = (fun mapper s -> keep_in_struct txt s)
   }

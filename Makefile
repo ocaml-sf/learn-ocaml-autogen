@@ -1,32 +1,46 @@
 FILES = prelude prepare solution template test
+BDIR = bin
+SDIR = src
+TDIR = tests
+INPUT = input.ml
+
 SUFFIX = .native
 SOLPREFIX = sol_
 MAPPREFIX = mapper_
 ASTPREFIX = ptree_
 TARGETS = $(addsuffix $(SUFFIX), $(addprefix $(MAPPREFIX), $(FILES)))
 
-INPUT = input.ml
+NAME = autogen
+EXE = $(NAME)$(SUFFIX)
+BEXE = $(BDIR)/$(NAME)
 
-OCB_LIBS = -package compiler-libs.common
-OCB = ocamlbuild $(OCB_LIBS)
+OCB_LIBS = -package compiler-libs.common -package cmdliner
+OCB_DIR_FLAGS = -I $(SDIR)
+OCB = ocamlbuild $(OCB_LIBS) $(OCB_DIR_FLAGS)
 
-DIRS = $(wildcard tests/*/)
+TESTS = $(wildcard $(TDIR)/*/)
 
 OCF = ocamlfind ppx_tools/rewriter
 
-.PHONY : clean clear all tests
+.PHONY : all clean clear test tests_clean
 
 all : $(TARGETS)
+	$(OCB) $(EXE)
+	mkdir -p $(BDIR) && mv $(EXE) $(BEXE); mv *$(SUFFIX) $(BDIR)
 
-%.native : %.ml
+%.native : $(SDIR)/%.ml
 	$(OCB) $@
 
 test : all
-	./run-tests
+	$(TDIR)/run-tests
 
 clean :
 	$(OCB) -clean
+	rmdir $(BDIR)
 
-clear : clean
-	rm -f $(foreach X, $(DIRS), $(foreach Y, $(FILES), $X$Y.ml))
-	rm -f $(foreach X, $(DIRS), $(foreach Y, $(FILES), $X$(ASTPREFIX)$Y.ml))
+tests_clean :
+	@rm -f $(foreach X, $(TESTS), $(foreach Y, $(FILES), $X$Y.ml))
+	@rm -f $(foreach X, $(TESTS), $(foreach Y, $(FILES), $X$(ASTPREFIX)$Y.ml))
+	@rm -f $(foreach X, $(TESTS), $(foreach Y, $(FILES), $X$(ASTPREFIX)$(SOLPREFIX)$Y.ml))
+
+clear : clean tests_clean
