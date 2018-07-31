@@ -25,7 +25,7 @@ gen_meta_json()
     if [ "$?" = "0" ]; then
       echo -e "$MOUTPUT........${GREEN}OK${NC}"
     else
-      echo -e "$MOUPUT........${RED}FAILED${NC}"
+      echo -e "$MOUTPUT........${RED}FAILED${NC}"
       FAILED=true
     fi
   fi

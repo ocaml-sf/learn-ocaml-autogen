@@ -13,17 +13,18 @@ let mk_meta_json dir =
   Filename.concat dir "meta.json"
 
 let exec ?(fatal=false) cmd error_msg =
-  if Sys.command cmd <> 0 then
+  let exit_value = Sys.command cmd in
+  if exit_value <> 0 then
     begin
       Printf.eprintf "%s" error_msg;
       if fatal then Printf.printf "Stopping the program.";
-      exit 1
+      exit exit_value
     end
 
 let remove_trailing_whitespaces output =
   let error_msg =
     Printf.sprintf "Could not remove trailing whitespaces in file %s." output in
-  exec ("sed -i.bak -E 's/[ \\t]+$//' " ^ output) error_msg
+  exec ("sed -i.bak -E 's/[ \t]+$//' " ^ output) error_msg
 
 let insert_line_between_each_functions output template_fill =
   let cmd = Printf.sprintf "sed -i.bak -E '/%s/G' %s" template_fill output in
@@ -41,45 +42,41 @@ let handle_ml_file output template_fill file =
   if file = "template" then
     begin
       change_template_fill output template_fill;
-      insert_line_between_each_functions output template_fill;
-      Sys.remove (output ^ ".bak")
-    end
+      insert_line_between_each_functions output template_fill
+    end;
+  Sys.remove (output ^ ".bak")
 
 let indent_meta_json meta_json =
-  let new_line = "\\\\\\n" in
   let error_msg =
     Printf.sprintf "Could not indent %s. Tests might fail." meta_json in
-  (* TODO this is gnu-specific. *)
   let spread_left_bracket =
-    Printf.sprintf "sed -i.bak $'s/{\"/{%s\"/' %s" new_line meta_json in
+    Printf.sprintf "sed -i.bak $'s/{/{\\\n/' %s" meta_json in
   let spread_right_bracket =
-    Printf.sprintf "sed -i.bak $'s/}/%s/' %s" new_line meta_json in
+    Printf.sprintf "sed -i.bak $'s/}/\\\n}/' %s" meta_json in
   let break_lines =
-    Printf.sprintf "sed -i.bak $'s/,\"/,%s\"/g' %s" new_line meta_json in
+    Printf.sprintf "sed -i.bak $'s/,/,\\\n/g' %s" meta_json in
   let stick_back_lists =
     Printf.sprintf
-    "awk '/\\[/{printf \"%%s\",$0;next} 1' %s | tee %s > /dev/null"
+    "awk '/\\[/{printf \"%%s\",$0;next} 1' %s | tee %s"(* > /dev/null *)
     meta_json meta_json in
   let indent = "sed -i.bak -E '/^[^{}]/{s/^/  /;}' " ^ meta_json in
   List.iter (fun cmd -> exec cmd error_msg) [
-    spread_left_bracket; spread_right_bracket; break_lines; stick_back_lists;
-    indent];
+    spread_left_bracket; break_lines; stick_back_lists; indent;
+    spread_right_bracket];
   Sys.remove (meta_json ^ ".bak")
 
 let handle_generated_file exercise output template_fill file =
-  Printf.printf "File %s generated.\n" (
-    if file = "meta" then (
-      (* HACK It seems that we can’t use command-line arguments and parsing of
-       * the command-line doesn’t work, so we move meta.json manually. *)
-      let ex_meta_json = mk_meta_json exercise in
-      Sys.rename "meta.json" ex_meta_json;
-      indent_meta_json ex_meta_json;
-      Sys.remove output;
-      ex_meta_json)
-    else (
-      handle_ml_file output template_fill file;
-      output)
-  )
+  if file = "meta" then (
+    (* HACK It seems that we can’t use command-line arguments and parsing of
+     * the command-line doesn’t work, so we move meta.json manually. *)
+    let ex_meta_json = mk_meta_json exercise in
+    Sys.rename "meta.json" ex_meta_json;
+    indent_meta_json ex_meta_json;
+    Sys.remove output;
+    Printf.printf "File %s generated.\n" ex_meta_json
+  ) else (
+    handle_ml_file output template_fill file;
+    Printf.printf "File %s generated.\n" output)
 
 let generate_file exercise input template_fill file =
   let mapper = mk_mapper file in
