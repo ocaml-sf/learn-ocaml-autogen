@@ -3,8 +3,6 @@ open Asttypes
 open Parsetree
 open Ezjsonm
 
-exception MissingField
-
 let base_meta = [
   ("learnocaml_version", string "2");
   ("kind", string "exercise");
@@ -57,8 +55,7 @@ let check_all_fields_defined meta =
   if undefined <> [] then begin
     Printf.eprintf "meta.json can’t be generated. Following fields are \
     missing:\n";
-    List.iter (fun (k, _) -> Printf.eprintf "%s" k) meta;
-    raise MissingField
+    List.iter (fun (k, _) -> Printf.eprintf "%s\n" k) undefined
   end
 
 let json_of_parsetree ptree_struct =
