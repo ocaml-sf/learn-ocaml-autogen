@@ -23,32 +23,48 @@ let exec ?(fatal=false) cmd error_msg =
 let remove_trailing_whitespaces output =
   let error_msg =
     Printf.sprintf "Could not remove trailing whitespaces in file %s." output in
-  exec ("sed -Ei 's/[ \\t]+$//' " ^ output) error_msg
+  exec ("sed -i.bak -E 's/[ \\t]+$//' " ^ output) error_msg
 
 let insert_line_between_each_functions output template_fill =
+  let cmd = Printf.sprintf "sed -i.bak -E '/%s/G' %s" template_fill output in
+  exec cmd "Could not insert line breaks."
+
+let change_template_fill output template_fill =
   let default_fill = "Replace this string by your implementation." in
   let cmd =
-    Printf.sprintf "sed -i 's/%s/%s/; /%s/G' %s"
-    default_fill template_fill template_fill output in
+    Printf.sprintf "sed -i.bak -E 's/%s/%s/' %s"
+    default_fill template_fill output in
   exec cmd "Could not change template. Using \"%s\" instead."
 
-let change_template_fill output template_fill file =
+let handle_ml_file output template_fill file =
   remove_trailing_whitespaces output;
-  if file = "template.ml" then
-    insert_line_between_each_functions output template_fill
+  if file = "template" then
+    begin
+      change_template_fill output template_fill;
+      insert_line_between_each_functions output template_fill;
+      Sys.remove (output ^ ".bak")
+    end
 
 let indent_meta_json meta_json =
+  let new_line = "\\\\\\n" in
   let error_msg =
     Printf.sprintf "Could not indent %s. Tests might fail." meta_json in
   (* TODO this is gnu-specific. *)
-  let spread_brackets = "sed -i 's/{\"/{\\n\"/; s/}/\\n}/' " ^ meta_json in
-  let break_lines = "sed -i 's/,\"/,\\n\"/g' " ^ meta_json in
+  let spread_left_bracket =
+    Printf.sprintf "sed -i.bak $'s/{\"/{%s\"/' %s" new_line meta_json in
+  let spread_right_bracket =
+    Printf.sprintf "sed -i.bak $'s/}/%s/' %s" new_line meta_json in
+  let break_lines =
+    Printf.sprintf "sed -i.bak $'s/,\"/,%s\"/g' %s" new_line meta_json in
   let stick_back_lists =
-    Printf.sprintf "awk '/\\[/{printf \"%%s\",$0;next} 1' %s | tee %s > /dev/null"
+    Printf.sprintf
+    "awk '/\\[/{printf \"%%s\",$0;next} 1' %s | tee %s > /dev/null"
     meta_json meta_json in
-  let indent = "sed -i '/^[^{}]/{s/^/  /}' " ^ meta_json in
-  List.iter (fun cmd -> exec cmd error_msg)
-    [spread_brackets; break_lines; stick_back_lists; indent]
+  let indent = "sed -i.bak -E '/^[^{}]/{s/^/  /;}' " ^ meta_json in
+  List.iter (fun cmd -> exec cmd error_msg) [
+    spread_left_bracket; spread_right_bracket; break_lines; stick_back_lists;
+    indent];
+  Sys.remove (meta_json ^ ".bak")
 
 let handle_generated_file exercise output template_fill file =
   Printf.printf "File %s generated.\n" (
@@ -61,7 +77,7 @@ let handle_generated_file exercise output template_fill file =
       Sys.remove output;
       ex_meta_json)
     else (
-      change_template_fill output template_fill file;
+      handle_ml_file output template_fill file;
       output)
   )
 
