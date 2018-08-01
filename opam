@@ -9,6 +9,8 @@ bug-reports: "https://github.com/ocaml-sf/learn-ocaml-autogen/issues"
 depends: [
   "ocamlfind" {build}
   "ppx_tools"
+  "ezjsonm"
+  "cmdliner"
 ]
 build: make
 run-test: [make "test"]
