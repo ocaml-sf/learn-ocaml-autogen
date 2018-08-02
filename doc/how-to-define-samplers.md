@@ -54,7 +54,7 @@ Inside a Learn-OCaml `test.ml` file, we would add the optional argument
 have directly given the function anonymously, instead of pre-defining it. That
 would be:
 ```ocaml
-~sample:fun () -> (Random.int 10, Random.int 4 + 1)
+~sample:(fun () -> (Random.int 10, Random.int 4 + 1))
 ```
 
 In autogen, we use
