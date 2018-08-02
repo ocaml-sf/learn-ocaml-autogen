@@ -13,8 +13,8 @@ install_bubblewrap_on_osx () {
 }
 
 case $TRAVIS_OS_NAME in
-  osx) opam_update_on_osx ;;
-  linux) opam_update_on_linux ;;
+  linux) install_bubblewrap_on_linux ;;
+  osx) install_bubblewrap_on_osx ;;
 esac
 
 opam install -y opam-devel
