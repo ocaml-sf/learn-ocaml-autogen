@@ -10,18 +10,13 @@ let exercise_g =
   Section
     ([Text "Function:"; Code "g"],
       (test_function_2_against_solution
-         ([%ty :int -> (int -> int) -> (int * (int -> int))]) "g" ~gen:10 []))
+         ([%ty :int -> float -> (int * float)]) "g" ~gen:10 []))
 
 let exercise_h =
   Section
     ([Text "Function:"; Code "h"],
       (test_function_3_against_solution
-         ([%ty
-            :int ->
-               (int -> int) ->
-                 (int -> int -> int) ->
-                   (int * (int -> int) * (int -> int -> int))]) "h" ~gen:10
-         []))
+         ([%ty :int -> float -> char -> (int * float * char)]) "h" ~gen:10 []))
 
 let exercise_i =
   Section

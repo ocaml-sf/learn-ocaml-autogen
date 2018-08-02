@@ -50,6 +50,7 @@ let field_of_let = function
       raise Location.(Error (
         error ~loc "Syntax error in metadata definition."))
 
+(* BUG meta.json is generated with null fields *)
 let check_all_fields_defined meta =
   let undefined = List.filter (fun (_, v) -> v = unit ()) meta in
   if undefined <> [] then begin
