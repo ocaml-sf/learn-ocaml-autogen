@@ -13,12 +13,12 @@ install_bubblewrap_on_osx () {
 }
 
 case $TRAVIS_OS_NAME in
-  linux) install_bubblewrap_on_linux ;;
-  osx) install_bubblewrap_on_osx ;;
+  linux) install_bubblewrap_on_linux; ROOT=home;;
+  osx) install_bubblewrap_on_osx; ROOT=Users;;
 esac
 
 opam install -y opam-devel
-sudo cp /home/travis/.opam/4.05.0/lib/opam-devel/* /usr/local/bin
+sudo cp "/$ROOT/travis/.opam/4.05.0/lib/opam-devel/*" /usr/local/bin
 hash -r
 opam upgrade -y || true
 opam install . -y --deps
