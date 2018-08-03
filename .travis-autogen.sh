@@ -18,7 +18,7 @@ case $TRAVIS_OS_NAME in
 esac
 
 opam install -y opam-devel
-sudo cp "/$ROOT/travis/.opam/4.05.0/lib/opam-devel/*" /usr/local/bin
+sudo cp /$ROOT/travis/.opam/4.05.0/lib/opam-devel/* /usr/local/bin
 hash -r
 opam upgrade -y || true
 opam install . -y --deps
