@@ -158,7 +158,7 @@ test functions other than manually on the generated test file.
 Finally, autogen also generates the `meta.json` file containing the metadata of
 the exercise such as the difficulty and the authors. The fields required in
 the input file to fill in `meta.json` are not all of those required. Some are
-filled automatically, but you can still give them an other value than the
+filled automatically, but you can still give them another value than the
 default one.
 
 Here is a list of all fields with the expected type and the default value when
@@ -169,7 +169,8 @@ applicable.
 - `title`: string
 - `short_description`: string
 - `identifier`: string
-- `authors`: string list list
+- `author`: string * string
+- `authors` : (string * string) list
 
 And here is a example of metadata definition inside `input.ml`.
 ```ocaml
@@ -177,8 +178,11 @@ let%meta stars = 5
 let%meta title = "Very hard exercise"
 let%meta short_description = "I bet you can’t do it!"
 let%meta identifier = "very_hard"
-let%meta authors = [["Me"; "me@myself.com"]]
+let%meta author = ("Me", "me@myself.com")
 ```
+
+If there are several authors, you can write them directly inside a list under
+`authors`. If there is only one, you can use `author`.
 
 ## About type annotation
 

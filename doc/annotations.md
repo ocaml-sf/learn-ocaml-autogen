@@ -5,8 +5,8 @@ Learn-OCaml autogen. If you haven’t, it is advised reading [how to write an
 exercise with autogen](how-to-write-an-exercise-with-autogen.md) first.
 
 Several annotations are used in Learn-OCaml autogen to discriminate some
-expressions from the rest of the program. You might have recognized so called
-*ppx extensions*. There are currently four different supported annotations.
+expressions from the rest of the program. There are currently four different
+supported annotations.
 
 <dl>
   <dt><code>%prelude</code></dt>
@@ -20,38 +20,28 @@ expressions from the rest of the program. You might have recognized so called
 
   <dt><code>%meta</code></dt>
   <dd>This annotation is used to distinguish definitions of metadata fields
-  that are to be translated into <code>meta.json</code>.</dd>
+  that are to be transposed into <code>meta.json</code>.</dd>
 
   <dt><code>%[sampler id]<code></dt>
   <dd>This annotation is used to define a sampler for the function identified
   as <code>id</code>, regardless of the surrounding sampler for its type.</dd>
 </dl>
 
-Annotated expressions serve different purposes, and so are more or less
-limited. A detailled description of the syntax of extensions is given
+You might have recognized OCaml’s *ppx extensions*. The following describes
+their use in the context of Learn-OCaml autogen. A detailed description of the
+syntax of extensions is given
 [here](https://caml.inria.fr/pub/docs/manual-ocaml/extn.html#sec262).
 
-We restrict ourselves to global definitions. We basically want to split
-definitions between files, which is why annotating sub-expressions wouldn’t
-make sense. For instance, this doesn’t work:
+Annotations apply to a global definition to discriminate them from the rest of
+the program. A definition with an annotation will be written with `%annot`
+appended to the keyword, without a space between them.
 ```ocaml
-module Int = struct
-  type t = int
-  let%prelude x = 3
-  let plus = ( + )
-end
-```
-While this does, with the definition of x being parsed into `prelude.ml`.
-```ocaml
-let%prelude x = 3
-module Int = struct
-  type t = int
-  let plus = ( + )
-end
-```
+type%prepare tree =
+  | Node of tree * tree
+  | Leaf of int
 
-A definition with an annotation will be written with `%annot` appended to the
-keyword, without a space between them, as you can see in the previous example.
+let%prepare null_tree = Leaf 0
+```
 
 `%prelude` and `%prepare` annotations can be used on any global definition.
 Valid keywords are:
@@ -75,7 +65,7 @@ let%annot rec f x = …
 
 `%meta` annotation is only valid on a `let` expression.
 ```
-keywords := let
+keywords_meta := let
 ```
 
 The syntax of `%sampler` is a bit different, as it takes arguments. It is the
