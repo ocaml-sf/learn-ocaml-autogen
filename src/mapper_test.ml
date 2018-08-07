@@ -4,7 +4,6 @@ open Asttypes
 open Parsetree
 
 let test_names = ref []
-let samplers = ref []
 
 let add_test_name test_name = test_names := test_name :: !test_names
 
@@ -60,12 +59,6 @@ let mk_ty_extension args result =
     {txt = "ty"; loc = !default_loc},
     PTyp arrow_type)
 
-let sampler_for f samplers =
-  try
-    let s = List.assoc f samplers in
-    [(Labelled "sampler", s)]
-  with Not_found -> []
-
 (* Construct a list as an AST *)
 let ast_of_list l =
   let mk_list_element acc x =
@@ -74,7 +67,7 @@ let ast_of_list l =
     mk_list_element (Exp.construct (mk_lid "[]") None) (List.rev l)
 
 let mk_test_function fun_name ty_extension which_test =
-  let sampler = sampler_for fun_name !samplers in
+  let sampler = Samplers.sampler_for fun_name in
   Exp.apply (mk_lid_exp which_test) ([
     (Nolabel, ty_extension);
     (Nolabel, mk_str_exp fun_name)]
@@ -171,35 +164,10 @@ let mk_main_function test_names =
           (Nolabel, Exp.fun_ Nolabel None (Pat.construct (mk_lid "()") None) (
             ast_of_list (List.map mk_lid_exp test_names)))])])])
 
-let get_lident = function
-  | {pexp_desc = Pexp_ident {txt = Longident.Lident x}} -> x
-  | {pexp_loc = loc} ->
-      raise Location.(Error (
-        error ~loc "Error while parsing: identifier expected."))
-
-(* Remember samplers of the kind let[%sampler f] = e for use in f’s test
- * function. *)
-let save_sampler = function
-  | {pvb_pat = {ppat_desc = Ppat_extension ({txt = "sampler"}, PStr [pstr])};
-    pvb_expr = e} ->
-      let make_assoc pexp = (get_lident pexp, e) in
-      begin match pstr with
-      | {pstr_desc = Pstr_eval ({pexp_desc = Pexp_ident _} as pexp, _)} ->
-          samplers := make_assoc pexp :: !samplers
-      | {pstr_desc = Pstr_eval ({pexp_desc = Pexp_apply (pexp, pexps)}, _)} ->
-          let pexps = List.map snd pexps in
-          samplers := List.map make_assoc (pexp :: pexps) @ !samplers
-      | {pstr_loc = loc} ->
-          raise Location.(Error (
-            error ~loc "Sampler extensions expect one or more function names."))
-      end
-  | {pvb_loc = loc} ->
-      raise Location.(Error (error ~loc "Not a sampler extension."))
-
 let split_samplers vbs =
-  let anonymous_samplers = List.filter Mapper.is_sampler_extension vbs
-  and global_samplers = List.filter Mapper.is_sampler_function vbs
-  and no_samplers = List.filter (fun x -> not (Mapper.is_sampler x)) vbs in
+  let anonymous_samplers = List.filter Samplers.is_sampler_extension vbs
+  and global_samplers = List.filter Samplers.is_sampler_function vbs
+  and no_samplers = List.filter (fun x -> not (Samplers.is_sampler x)) vbs in
   (anonymous_samplers, global_samplers, no_samplers)
 
 let extension_mapper items payload = function
@@ -216,7 +184,7 @@ let test_structure_mapper mapper s =
          * definitions, keep global samplers as if and create tests functions
          * for each solution function.*)
         let (anonymous_samp, global_samp, no_samp) = split_samplers vbs in
-        List.iter save_sampler anonymous_samp;
+        List.iter Samplers.save_sampler anonymous_samp;
         let pstr_samplers = Str.value rec_flag global_samp in
         let pstr_tests = List.rev_map (test_function_of_vb rec_flag) no_samp in
         (* Inside a mutually recursive definition, samplers are taken apart and

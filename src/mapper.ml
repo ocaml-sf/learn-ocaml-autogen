@@ -3,27 +3,6 @@ open Ast_helper
 open Asttypes
 open Parsetree
 
-let is_sampler_extension = function
-  | {pvb_pat = {ppat_desc = Ppat_extension ({txt = "sampler"}, _)}} -> true
-  | _ -> false
-
-let is_sampler_function = function
-  | {pvb_pat = {ppat_desc = Ppat_var {txt = fun_name}}} ->
-      begin
-        try String.sub fun_name 0 7 = "sample_"
-        with Invalid_argument _ -> false
-      end
-  | x -> false
-
-let is_sampler x =
-  is_sampler_extension x || is_sampler_function x
-
-let remove_samplers = function
-  | {pstr_desc = Pstr_value (rec_flag, vbs)} ->
-      let no_sampler = List.filter (fun x -> not (is_sampler x)) vbs in
-      Str.value rec_flag no_sampler
-  | x -> x
-
 let is_let_definition = function
   | {pstr_desc = Pstr_value (_, vbs)} -> vbs <> []
   | _ -> false
@@ -89,5 +68,5 @@ let solution_template_structure_mapper is_solution extension_mapper mapper s =
         replace (extension_mapper items payload txt @ acc) s
     | _ :: s -> replace acc s
     | [] -> acc in
-  let s' = List.map remove_samplers s in
+  let s' = List.map Samplers.remove_samplers s in
   List.rev (replace [] s')
