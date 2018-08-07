@@ -1,25 +1,25 @@
 open Test_lib
 open Report
 
-let exercise_plus =
+let function_plus =
   Section
     ([Text "Function:"; Code "plus"],
       (test_function_2_against_solution ([%ty :int -> int -> int]) "plus"
          ~gen:10 []))
 
-let exercise_minus =
+let function_minus =
   Section
     ([Text "Function:"; Code "minus"],
       (test_function_2_against_solution ([%ty :int -> int -> int]) "minus"
          ~gen:10 []))
 
-let exercise_times =
+let function_times =
   Section
     ([Text "Function:"; Code "times"],
       (test_function_2_against_solution ([%ty :int -> int -> int]) "times"
          ~gen:10 []))
 
-let exercise_divide =
+let function_divide =
   Section
     ([Text "Function:"; Code "divide"],
       (test_function_2_against_solution ([%ty :int -> int -> int]) "divide"
@@ -29,5 +29,5 @@ let () =
   set_result @@
     ((ast_sanity_check code_ast) @@
        (fun ()  ->
-          [exercise_plus; exercise_minus; exercise_times; exercise_divide]))
+          [function_plus; function_minus; function_times; function_divide]))
 
