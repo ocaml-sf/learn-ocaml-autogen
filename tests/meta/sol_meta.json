@@ -5,5 +5,8 @@
   "title":"Blimey! this is a really trivial exercise",
   "short_description":"Identity function",
   "identifier":"meta",
-  "authors":[["Me","me@myself.fr"]]
+  "authors":[["I","thisisme@mail.adress"],
+  ["Me","me@myself.fr"],
+  ["Mine","iwrote@this.exercise"],
+  ["Me again", "i@really.did"]]
 }
