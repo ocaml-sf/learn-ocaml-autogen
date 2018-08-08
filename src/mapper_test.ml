@@ -53,7 +53,7 @@ let get_types pexp =
   in aux pexp []
 
 let mk_ty_extension args result =
-  let add_arrow = fun acc ty -> Typ.arrow Nolabel ty acc in
+  let add_arrow acc ty = Typ.arrow Nolabel ty acc in
   let arrow_type = List.fold_left add_arrow result (List.rev args) in
   Exp.extension (
     {txt = "ty"; loc = !default_loc},
@@ -66,8 +66,7 @@ let ast_of_list l =
   List.fold_left
     mk_list_element (Exp.construct (mk_lid "[]") None) (List.rev l)
 
-let mk_test_function fun_name ty_extension which_test =
-  let sampler = Samplers.sampler_for fun_name in
+let mk_test_function_with_sampler fun_name ty_extension which_test sampler =
   Exp.apply (mk_lid_exp which_test) ([
     (Nolabel, ty_extension);
     (Nolabel, mk_str_exp fun_name)]
@@ -75,6 +74,19 @@ let mk_test_function fun_name ty_extension which_test =
     [(Labelled "gen", Exp.constant (
       Pconst_integer (string_of_int gen_nb, None)));
     (Nolabel, Exp.construct (mk_lid "[]") None)])
+
+let mk_test_function fun_name ty_extension which_test =
+  let samplers = Samplers.samplers_for fun_name in
+  if samplers = [] then
+    mk_test_function_with_sampler fun_name ty_extension which_test []
+  else
+    let mk_test sampler =
+      mk_test_function_with_sampler fun_name ty_extension which_test [(Labelled
+      "sampler", sampler)] in
+    let concat acc exp =
+      Exp.apply (mk_lid_exp "@") [(Nolabel, exp); (Nolabel, acc)] in
+    let tests = List.map mk_test samplers in
+    List.fold_left concat (List.hd tests) (List.tl tests)
 
 let mk_test_var var_name ty_extension =
   Exp.apply (mk_lid_exp "test_variable_against_solution") [

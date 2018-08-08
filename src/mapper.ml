@@ -68,5 +68,5 @@ let solution_template_structure_mapper is_solution extension_mapper mapper s =
         replace (extension_mapper items payload txt @ acc) s
     | _ :: s -> replace acc s
     | [] -> acc in
-  let s' = List.map Samplers.remove_samplers s in
+  let s' = List.map Samplers.remove_samplers_from_struct s in
   List.rev (replace [] s')
