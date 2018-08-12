@@ -1,1 +1,1 @@
-let x = "Replace this string by your implementation."
+let x = "Replace this string with your implementation."

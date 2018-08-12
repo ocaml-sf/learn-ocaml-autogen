@@ -34,7 +34,7 @@ let insert_line_between_each_functions template_fill =
   sed (Printf.sprintf "'/%s/G'" template_fill)
 
 let change_template_fill template_fill =
-  let default_fill = "Replace this string by your implementation." in
+  let default_fill = "Replace this string with your implementation." in
   sed (Printf.sprintf "'s/%s/%s/'" default_fill template_fill)
 
 let handle_ml_file output template_fill file =
@@ -115,7 +115,7 @@ module Args = struct
       `meta'. Don't generate the corresponding file. Can be repeated."
 
   let template_fill =
-    value & opt string "Replace this string by your implementation." & info
+    value & opt string "Replace this string with your implementation." & info
     ["t"; "template_fill"] ~docv:"STRING" ~doc:
       "String to be used in the template in place of the answer."
 

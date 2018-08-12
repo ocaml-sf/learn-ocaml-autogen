@@ -94,11 +94,11 @@ is removed from the definiton, to avoid giving away to much informations.
 
 ```ocaml
 (* template.ml *)
-let fact x = "Replace this string by your implementation."
+let fact x = "Replace this string with your implementation."
 
-let fibonacci n = "Replace this string by your implementation."
+let fibonacci n = "Replace this string with your implementation."
 
-let foo x y = "Replace this string by your implementation."
+let foo x y = "Replace this string with your implementation."
 ```
 
 ## Test

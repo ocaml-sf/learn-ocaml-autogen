@@ -20,7 +20,7 @@ let rec remove_type_annotations keep_body = function
         if keep_body then e
         else
           Exp.constant ~loc ~attrs (Pconst_string (
-            "Replace this string by your implementation.", None))
+            "Replace this string with your implementation.", None))
   | {pexp_loc = loc} ->
       raise Location.(Error (
         error ~loc "Not a function or lacking type annotations."))
