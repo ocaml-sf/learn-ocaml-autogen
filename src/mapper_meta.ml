@@ -71,8 +71,8 @@ let field_of_let = function
 let check_all_fields_defined meta =
   let undefined = List.filter (fun (_, v) -> v = unit ()) meta in
   if undefined <> [] then begin
-    Printf.eprintf "meta.json can’t be generated. Following fields are \
-    missing:\n";
+    Printf.eprintf "WARNING meta.json can’t be generated. Following fields \
+    are missing:\n";
     List.iter (fun (k, _) -> Printf.eprintf "%s\n" k) undefined
   end
 

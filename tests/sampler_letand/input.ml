@@ -14,10 +14,10 @@ and make_int_tuple (x : char) : int_int =
 
 and sample_float_int () = (1., 1)
 
+let%sampler[@id_int] sampler_id_int = fun () -> Random.int 10 mod 2
+
 let rec id_int (x : int) : int = x
 and id_float (x : float) : float = x
-
-and[%sampler id_int] = fun () -> Random.int 10 mod 2
 
 type char_int = char * int
 type int_char = int * char

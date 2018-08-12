@@ -9,19 +9,13 @@ let add_test_name test_name = test_names := test_name :: !test_names
 
 let gen_nb = 10
 
-let mk_lid s = {txt = Longident.Lident s; loc = !default_loc}
-let mk_lid_exp s = Exp.ident (mk_lid s)
-let mk_str_loc s = {txt = s; loc = !default_loc}
-
-let mk_str_exp s = Exp.constant (Pconst_string (s, None))
-
 type kind =
-  (* name, type, number of parameters *)
-  | Function of string * Parsetree.expression * int
+  (* name, argument number, parameter types, return type *)
+  | Function of string * int * Ptype.ftype
   (* name, type *)
-  | Variable of string * Parsetree.expression
+  | Variable of string * Parsetree.core_type
   (* name, type, expected value *)
-  | Reference of string * Parsetree.expression * Parsetree.expression
+  | Reference of string * Parsetree.core_type * Parsetree.expression
 
 let kind_to_string = function
   | Function _ -> "function"
@@ -35,121 +29,129 @@ let mk_test_name kind =
   let name = get_name kind in
   kind_to_string kind ^ "_" ^ name
 
-(* pexp should represent a function. *)
+let option_map f = function
+  | Some x -> Some (f x)
+  | None -> None
+
 let get_types pexp =
-  let rec aux pexp args =
+  let rec aux pexp args arg_number =
     match pexp with
-    (* Variable *)
-    | {pexp_desc = Pexp_fun
-        (_, _,
-        {ppat_desc = Ppat_constraint (_, {ptyp_desc = ty})},
-        pexp')} ->
-          aux pexp' (ty :: args)
-    (* Function *)
-    | {pexp_desc = Pexp_constraint (_, {ptyp_desc = ty})} ->
-        (List.rev args, ty)
+    (* Variable (parameter) annotation *)
+    | {pexp_desc = Pexp_fun (_, _, {ppat_desc}, pexp')} ->
+        let args' =
+          begin match ppat_desc with
+          | Ppat_constraint (_, ty) -> option_map (List.cons ty) args
+          | _ -> None
+          end
+        in aux pexp' args' (arg_number + 1)
+    (* Function annotation *)
+    | {pexp_desc = Pexp_constraint (_, ty)} ->
+        (arg_number, (option_map List.rev args, Some ty))
+    | {pexp_desc = Pexp_constant _} ->
+        (arg_number, (option_map List.rev args, None))
     | {pexp_loc = loc} ->
         raise Location.(Error (error ~loc "Not enough type annotations."))
-  in aux pexp []
+  in aux pexp (Some []) 0
 
-let mk_ty_extension args result =
-  let add_arrow acc ty = Typ.arrow Nolabel ty acc in
-  let arrow_type = List.fold_left add_arrow result (List.rev args) in
-  Exp.extension (
-    {txt = "ty"; loc = !default_loc},
-    PTyp arrow_type)
-
-(* Construct a list as an AST *)
-let ast_of_list l =
-  let mk_list_element acc x =
-    Exp.construct (mk_lid "::") (Some (Exp.tuple [x; acc])) in
-  List.fold_left
-    mk_list_element (Exp.construct (mk_lid "[]") None) (List.rev l)
-
-let mk_test_function_with_sampler fun_name ty_extension which_test sampler =
-  Exp.apply (mk_lid_exp which_test) ([
+let mk_test_function_with_sampler fun_name sampler ty_extension which_test =
+  Exp.apply (Builders.lid_exp which_test) ([
     (Nolabel, ty_extension);
-    (Nolabel, mk_str_exp fun_name)]
+    (Nolabel, Builders.str_exp fun_name)]
     @ sampler @
     [(Labelled "gen", Exp.constant (
       Pconst_integer (string_of_int gen_nb, None)));
-    (Nolabel, Exp.construct (mk_lid "[]") None)])
+    (Nolabel, Exp.construct (Builders.lid "[]") None)])
 
-let mk_test_function fun_name ty_extension which_test =
-  let samplers = Samplers.samplers_for fun_name in
-  if samplers = [] then
-    mk_test_function_with_sampler fun_name ty_extension which_test []
+let mk_test_function_no_samplers fun_name fun_ty which_test =
+  match fun_ty with
+  | Some f_arg_ty, Some f_ret_ty ->
+    let ty = Ptype.mk_arrow_type f_arg_ty f_ret_ty in
+    let ty_extension = Ptype.mk_ty_extension ty in
+    mk_test_function_with_sampler fun_name [] ty_extension which_test
+  | _ ->
+    raise Location.(Error (error (
+      Printf.sprintf "ERROR Function %s and its samplers are not \
+      annotated enough." fun_name)))
+
+let mk_test_function fun_name fun_ty which_test =
+  let samplers_fun = Samplers.samplers_for fun_name in
+  if samplers_fun = [] then
+    mk_test_function_no_samplers fun_name fun_ty which_test
   else
-    let mk_test sampler =
-      mk_test_function_with_sampler fun_name ty_extension which_test [(Labelled
-      "sampler", sampler)] in
-    let concat acc exp =
-      Exp.apply (mk_lid_exp "@") [(Nolabel, exp); (Nolabel, acc)] in
+    let samplers =
+      List.filter (Samplers.sufficient_annotations fun_ty) samplers_fun in
+    let mk_test (Samplers.Sampler (s, _) as sampler) =
+      let ty_extension =
+        Ptype.mk_ty_extension (Samplers.test_type fun_name fun_ty sampler) in
+      let s_arg = [(Labelled "sampler", s)] in
+      mk_test_function_with_sampler fun_name s_arg ty_extension which_test in
+    let concat acc pexp =
+      Exp.apply (Builders.lid_exp "@") [(Nolabel, pexp); (Nolabel, acc)] in
     let tests = List.map mk_test samplers in
     List.fold_left concat (List.hd tests) (List.tl tests)
 
-let mk_test_var var_name ty_extension =
-  Exp.apply (mk_lid_exp "test_variable_against_solution") [
-    (Nolabel, ty_extension);
-    (Nolabel, mk_str_exp var_name)]
+let mk_test_var var_name ty =
+  Exp.apply (Builders.lid_exp "test_variable_against_solution") [
+    (Nolabel, Ptype.mk_ty_extension ty);
+    (Nolabel, Builders.str_exp var_name)]
 
-let mk_test_ref ref_name ty_extension exp =
-  Exp.apply (mk_lid_exp "test_ref") [
-    (Nolabel, ty_extension);
-    (Nolabel, mk_lid_exp ref_name);
+let mk_test_ref ref_name ty exp =
+  Exp.apply (Builders.lid_exp "test_ref") [
+    (Nolabel, Ptype.mk_ty_extension ty);
+    (Nolabel, Builders.lid_exp ref_name);
     (Nolabel, exp)]
 
 let mk_report = function
-  | Function (name, ty, n) ->
-      if n > 4 then
+  | Function (name, arg_number, (arg_ty, ret_ty as fun_ty)) ->
+      if arg_number > 4 then
         raise Location.(Error (
           error (Printf.sprintf "Too many parameters for function \
             %s: 4 maximum accepted for automatic generation." name)));
       let which_test = Printf.sprintf
-        "test_function_%s_against_solution" (string_of_int n) in
-      mk_test_function name ty which_test
+        "test_function_%s_against_solution" (string_of_int arg_number) in
+      mk_test_function name fun_ty which_test
   | Variable (name, ty) -> mk_test_var name ty
   | Reference (name, ty, exp) -> mk_test_ref name ty exp
 
 let mk_test kind =
+  let open Builders in
   let name = get_name kind in
   let test_name = mk_test_name kind in
   test_names := test_name :: !test_names;
   let header_kind = String.capitalize_ascii (kind_to_string kind) in
   let header = [
-    Exp.construct (mk_lid "Text") (Some (
+    Exp.construct (lid "Text") (Some (
       Exp.constant (Pconst_string (header_kind ^ ":", None))));
-    Exp.construct (mk_lid "Code") (Some (mk_str_exp name))] in
+    Exp.construct (lid "Code") (Some (str_exp name))] in
   Str.value Nonrecursive [
-    Vb.mk (Pat.var (mk_str_loc test_name)) (
-      Exp.construct (mk_lid "Section") (Some (
+    Vb.mk (Pat.var (str_loc test_name)) (
+      Exp.construct (lid "Section") (Some (
         Exp.tuple [
           ast_of_list header;
           mk_report kind])))]
 
 let test_function_of_vb rec_flag = function
   | {pvb_pat = {ppat_desc = Ppat_var {txt = fun_name}}; pvb_expr = pexp} ->
-      let (args, return_type) = get_types pexp in
-      let nb_of_args = List.length args in
-      let args_core_type = List.map Typ.mk args in
-      let return_core_type = Typ.mk return_type in
-      let ty_extension = mk_ty_extension args_core_type return_core_type in
-      mk_test (Function (fun_name, ty_extension, nb_of_args))
+      let (arg_number, (arg_ty, ret_ty)) = get_types pexp in
+      mk_test (Function (fun_name, arg_number, (arg_ty, ret_ty)))
   | _ -> raise Location.(Error (error "Not a function."))
 
-let test_variable_of_vb = function
+let test_variable_of_vb vb =
+  let error () =
+    raise Location.(Error (error "Variable not annotated.")) in
+  match vb with
   | {pvb_pat = {ppat_desc = Ppat_var {txt = name}}; pvb_expr = pexp} ->
-      let ty_extension = mk_ty_extension [] (Typ.mk (snd (get_types pexp))) in
-      mk_test (Variable (name, ty_extension))
-  | {pvb_loc = loc} ->
-      raise Location.(Error (error ~loc "Variable not annotated."))
+      begin match get_types pexp with
+      | (_, (_, Some ty)) -> mk_test (Variable (name, ty))
+      | _ -> error ()
+      end
+  | _ -> error ()
 
 let test_reference_of_vb = function
   | {pvb_pat = {ppat_desc = Ppat_var {txt = name}}; pvb_expr = {pexp_desc}} ->
       begin match pexp_desc with
-      | Pexp_constraint (expected, {ptyp_desc = ty}) ->
-          let ty_extension = mk_ty_extension [] (Typ.mk ty) in
-          mk_test (Reference (name, ty_extension, expected))
+      | Pexp_constraint (expected, ty) ->
+          mk_test (Reference (name, ty, expected))
       | _ -> raise Location.(Error (error "Reference not annotated."))
       end
   | {pvb_loc = loc} ->
@@ -166,25 +168,21 @@ let test_reference_of_item = test_of_item test_reference_of_vb
 
 (* The main function puts the test functions alltogether. *)
 let mk_main_function test_names =
+  let open Builders in
   Str.value Nonrecursive ([
-    Vb.mk (Pat.construct (mk_lid "()") None)
-      (Exp.apply (mk_lid_exp "@@") [
-        (Nolabel, Exp.ident (mk_lid "set_result"));
-        (Nolabel, Exp.apply (mk_lid_exp "@@") [
-          (Nolabel, Exp.apply (mk_lid_exp "ast_sanity_check") [
-            (Nolabel, mk_lid_exp "code_ast")]);
-          (Nolabel, Exp.fun_ Nolabel None (Pat.construct (mk_lid "()") None) (
-            ast_of_list (List.map mk_lid_exp test_names)))])])])
-
-let split_samplers vbs =
-  let anonymous_samplers = List.filter Samplers.is_sampler_extension vbs
-  and global_samplers = List.filter Samplers.is_sampler_function vbs
-  and no_samplers = List.filter (fun x -> not (Samplers.is_sampler x)) vbs in
-  (anonymous_samplers, global_samplers, no_samplers)
+    Vb.mk (Pat.construct (lid "()") None)
+      (Exp.apply (lid_exp "@@") [
+        (Nolabel, Exp.ident (lid "set_result"));
+        (Nolabel, Exp.apply (lid_exp "@@") [
+          (Nolabel, Exp.apply (lid_exp "ast_sanity_check") [
+            (Nolabel, lid_exp "code_ast")]);
+          (Nolabel, Exp.fun_ Nolabel None (Pat.construct (lid "()") None) (
+            ast_of_list (List.map lid_exp test_names)))])])])
 
 let extension_mapper items payload = function
   | "var" -> List.concat (List.map test_variable_of_item items)
   | "ref" -> List.concat (List.map test_reference_of_item items)
+  | "sampler" -> List.iter Samplers.save_samplers items; []
   | "test" -> items
   | _ -> []
 
@@ -195,8 +193,8 @@ let test_structure_mapper mapper s =
         (* If case of a value definition, we have to remove local sampler
          * definitions, keep global samplers as if and create tests functions
          * for each solution function.*)
-        let (anonymous_samp, global_samp, no_samp) = split_samplers vbs in
-        List.iter Samplers.save_sampler anonymous_samp;
+        let (global_samp, no_samp) =
+          List.partition Samplers.is_sampler_function vbs in
         let pstr_samplers = Str.value rec_flag global_samp in
         let pstr_tests = List.rev_map (test_function_of_vb rec_flag) no_samp in
         (* Inside a mutually recursive definition, samplers are taken apart and
