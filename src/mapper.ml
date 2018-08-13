@@ -11,19 +11,17 @@ let is_let_definition = function
  * the template. *)
 let rec remove_type_annotations keep_body = function
   (* Argument type annotations. *)
-  | {pexp_loc = loc; pexp_desc = Pexp_fun (rec_flag, e,
-      {ppat_desc = Ppat_constraint (pattern, ty)}, body)} ->
-        Exp.fun_ ~loc rec_flag e pattern (remove_type_annotations keep_body body)
+  | {pexp_desc = Pexp_fun (rec_flag, e,
+      {ppat_desc = Ppat_constraint (pattern, _)}, body)}
+  | {pexp_desc = Pexp_fun (rec_flag, e, pattern, body)} ->
+      let body' = remove_type_annotations keep_body body in
+      Exp.fun_ rec_flag e pattern body'
   (* ty is the last type annotation: the return type. *)
-  | {pexp_loc = loc; pexp_attributes = attrs;
-      pexp_desc = Pexp_constraint (e, ty)} ->
-        if keep_body then e
-        else
-          Exp.constant ~loc ~attrs (Pconst_string (
-            "Replace this string with your implementation.", None))
-  | {pexp_loc = loc} ->
-      raise Location.(Error (
-        error ~loc "Not a function or lacking type annotations."))
+  | {pexp_desc = Pexp_constraint (e, _)} | e ->
+      if keep_body then e
+      else
+        Exp.constant (Pconst_string (
+          "Replace this string with your implementation.", None))
 
 let remove_type_annotations_in_vbs keep_body =
   let fetch_e_and_remove {pvb_pat; pvb_expr; pvb_attributes; pvb_loc} =

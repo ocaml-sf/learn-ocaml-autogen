@@ -11,7 +11,7 @@ let gen_nb = 10
 
 type kind =
   (* name, argument number, parameter types, return type *)
-  | Function of string * int * Ptype.ftype
+  | Function of string * int * Ftype.t
   (* name, type *)
   | Variable of string * Parsetree.core_type
   (* name, type, expected value *)
@@ -33,25 +33,12 @@ let option_map f = function
   | Some x -> Some (f x)
   | None -> None
 
-let get_types pexp =
-  let rec aux pexp args arg_number =
-    match pexp with
-    (* Variable (parameter) annotation *)
-    | {pexp_desc = Pexp_fun (_, _, {ppat_desc}, pexp')} ->
-        let args' =
-          begin match ppat_desc with
-          | Ppat_constraint (_, ty) -> option_map (List.cons ty) args
-          | _ -> None
-          end
-        in aux pexp' args' (arg_number + 1)
-    (* Function annotation *)
-    | {pexp_desc = Pexp_constraint (_, ty)} ->
-        (arg_number, (option_map List.rev args, Some ty))
-    | {pexp_desc = Pexp_constant _} ->
-        (arg_number, (option_map List.rev args, None))
-    | {pexp_loc = loc} ->
-        raise Location.(Error (error ~loc "Not enough type annotations."))
-  in aux pexp (Some []) 0
+let get_arg_number pexp =
+  let rec aux arg_number = function
+    | {pexp_desc = Pexp_fun (_, _, _, pexp)} ->
+        aux (arg_number + 1) pexp
+    | _ -> arg_number in
+  aux 0 pexp
 
 let mk_test_function_with_sampler fun_name sampler ty_extension which_test =
   Exp.apply (Builders.lid_exp which_test) ([
@@ -63,15 +50,8 @@ let mk_test_function_with_sampler fun_name sampler ty_extension which_test =
     (Nolabel, Exp.construct (Builders.lid "[]") None)])
 
 let mk_test_function_no_samplers fun_name fun_ty which_test =
-  match fun_ty with
-  | Some f_arg_ty, Some f_ret_ty ->
-    let ty = Ptype.mk_arrow_type f_arg_ty f_ret_ty in
-    let ty_extension = Ptype.mk_ty_extension ty in
-    mk_test_function_with_sampler fun_name [] ty_extension which_test
-  | _ ->
-    raise Location.(Error (error (
-      Printf.sprintf "ERROR Function %s and its samplers are not \
-      annotated enough." fun_name)))
+  let ty_extension = Ftype.mk_fty_extension fun_name fun_ty in
+  mk_test_function_with_sampler fun_name [] ty_extension which_test
 
 let mk_test_function fun_name fun_ty which_test =
   let samplers_fun = Samplers.samplers_for fun_name in
@@ -80,9 +60,13 @@ let mk_test_function fun_name fun_ty which_test =
   else
     let samplers =
       List.filter (Samplers.sufficient_annotations fun_ty) samplers_fun in
+    if samplers = [] then
+      raise Location.(Error (error (
+        Printf.sprintf "ERROR A test for function %s cannot be generated: \
+          insufficient type annotations." fun_name)));
     let mk_test (Samplers.Sampler (s, _) as sampler) =
-      let ty_extension =
-        Ptype.mk_ty_extension (Samplers.test_type fun_name fun_ty sampler) in
+      let test_type = Samplers.test_type fun_ty sampler in
+      let ty_extension = Ftype.mk_fty_extension fun_name test_type in
       let s_arg = [(Labelled "sampler", s)] in
       mk_test_function_with_sampler fun_name s_arg ty_extension which_test in
     let concat acc pexp =
@@ -92,17 +76,17 @@ let mk_test_function fun_name fun_ty which_test =
 
 let mk_test_var var_name ty =
   Exp.apply (Builders.lid_exp "test_variable_against_solution") [
-    (Nolabel, Ptype.mk_ty_extension ty);
+    (Nolabel, Ftype.mk_ty_extension ty);
     (Nolabel, Builders.str_exp var_name)]
 
 let mk_test_ref ref_name ty exp =
   Exp.apply (Builders.lid_exp "test_ref") [
-    (Nolabel, Ptype.mk_ty_extension ty);
+    (Nolabel, Ftype.mk_ty_extension ty);
     (Nolabel, Builders.lid_exp ref_name);
     (Nolabel, exp)]
 
 let mk_report = function
-  | Function (name, arg_number, (arg_ty, ret_ty as fun_ty)) ->
+  | Function (name, arg_number, fun_ty) ->
       if arg_number > 4 then
         raise Location.(Error (
           error (Printf.sprintf "Too many parameters for function \
@@ -132,8 +116,9 @@ let mk_test kind =
 
 let test_function_of_vb rec_flag = function
   | {pvb_pat = {ppat_desc = Ppat_var {txt = fun_name}}; pvb_expr = pexp} ->
-      let (arg_number, (arg_ty, ret_ty)) = get_types pexp in
-      mk_test (Function (fun_name, arg_number, (arg_ty, ret_ty)))
+      let arg_number = get_arg_number pexp in
+      let ty = Ftype.get_function_type pexp in
+      mk_test (Function (fun_name, arg_number, ty))
   | _ -> raise Location.(Error (error "Not a function."))
 
 let test_variable_of_vb vb =
@@ -141,8 +126,9 @@ let test_variable_of_vb vb =
     raise Location.(Error (error "Variable not annotated.")) in
   match vb with
   | {pvb_pat = {ppat_desc = Ppat_var {txt = name}}; pvb_expr = pexp} ->
-      begin match get_types pexp with
-      | (_, (_, Some ty)) -> mk_test (Variable (name, ty))
+      begin match pexp with
+      | {pexp_desc = Pexp_constraint (_, ty)} ->
+          mk_test (Variable (name, ty))
       | _ -> error ()
       end
   | _ -> error ()
