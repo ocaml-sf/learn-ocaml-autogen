@@ -3,18 +3,15 @@ open Ast_helper
 open Asttypes
 open Parsetree
 
-let template_structure_mapper mapper =
-  let remove_type_annotations_and_body = function
-    | {pstr_desc = Pstr_value (_, vbs)} ->
-        let vbs' = Mapper.remove_type_annotations_in_vbs false vbs in
-        Str.value Nonrecursive vbs'
-    | x -> x
-  in
-  Mapper.map_to_let_definitions remove_type_annotations_and_body
+let extension_mapper items payload = function
+  | "var" -> List.map (Mapper.remove_type_annotations_in_expression false) items
+  | "template" -> items
+  | _ -> []
 
 let template_mapper _argv =
   { default_mapper with
-    structure = template_structure_mapper
+    structure =
+      Mapper.solution_template_structure_mapper false extension_mapper
   }
 
 let () = register "template" template_mapper

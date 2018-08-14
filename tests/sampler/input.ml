@@ -2,7 +2,7 @@ open Test_lib
 open Report
 
 (* Attached to join function. *)
-let[%sampler join] = fun () -> ('a', 2.)
+let%sampler[@join] sample_join = fun () -> ('a', 2.)
 
 (* let sample_1 : unit -> int * int = fun () -> (Random.int 10, Random.int 10)
  * or rather *)

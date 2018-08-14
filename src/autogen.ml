@@ -9,42 +9,79 @@ let mk_mapper file =
 let mk_output dir file =
   Filename.concat dir (file ^ ".ml")
 
+let mk_meta_json dir =
+  Filename.concat dir "meta.json"
+
 let exec ?(fatal=false) cmd error_msg =
-  if Sys.command cmd <> 0 then
+  let exit_value = Sys.command cmd in
+  if exit_value <> 0 then
     begin
       Printf.eprintf "%s" error_msg;
       if fatal then Printf.printf "Stopping the program.";
-      exit 1
+      exit exit_value
     end
 
-let remove_trailing_whitespaces output =
-  let error_msg =
-    Printf.sprintf "Could not remove trailing whitespaces in file %s." output in
-  exec ("sed -Ei 's/[ \\t]+$//' " ^ output) error_msg
+let sed script output =
+  let e =
+    try if script.[0] = '$' then "" else "-E"
+    with Invalid_argument _ -> "-E" in
+  let cmd = Printf.sprintf "sed -i.bak %s %s %s" e script output in
+  exec cmd (Printf.sprintf "Error while modifying %s." output)
 
-let insert_line_between_each_functions output template_fill =
-  let default_fill = "Replace this string by your implementation." in
-  let cmd =
-    Printf.sprintf "sed -i 's/%s/%s/; /%s/G' %s"
-    default_fill template_fill template_fill output in
-  exec cmd "Could not change template. Using \"%s\" instead."
+let remove_trailing_whitespaces = sed "'s/[ \t]+$//'"
 
-let change_template_fill output template_fill =
+let insert_line_between_each_functions template_fill =
+  sed (Printf.sprintf "'/%s/G'" template_fill)
+
+let change_template_fill template_fill =
+  let default_fill = "Replace this string with your implementation." in
+  sed (Printf.sprintf "'s/%s/%s/'" default_fill template_fill)
+
+let handle_ml_file output template_fill file =
   remove_trailing_whitespaces output;
-  let basename = Filename.basename output in
-  if basename = "template.ml" then
-    insert_line_between_each_functions output template_fill
+  if file = "template" then
+    begin
+      change_template_fill template_fill output;
+      insert_line_between_each_functions template_fill output
+    end;
+  Sys.remove (output ^ ".bak")
+
+let indent_meta_json meta_json =
+  let spread_left_bracket = "$'s/{/{\\\n/'" in
+  let spread_right_bracket = "$'s/}/\\\n}/'" in
+  let break_lines = "$'s/,/,\\\n/g'" in
+  List.iter (fun script -> sed script meta_json) [
+    spread_left_bracket; break_lines; spread_right_bracket];
+  let stick_back_lists =
+    Printf.sprintf
+    "awk '/\\[/{printf \"%%s\",$0;next} 1' %s | tee %s"(* > /dev/null *)
+    meta_json meta_json in
+  exec stick_back_lists (Printf.sprintf "Error while modifying %s." meta_json);
+  let indent = "'/^[^{}]/{s/^/  /;}'" in sed indent meta_json;
+  Sys.remove (meta_json ^ ".bak")
+
+let handle_generated_file exercise output template_fill file =
+  if file = "meta" then (
+    (* HACK It seems that we can’t use command-line arguments and parsing of
+     * the command-line doesn’t work, so we move meta.json manually. *)
+    let ex_meta_json = mk_meta_json exercise in
+    Sys.rename "meta.json" ex_meta_json;
+    indent_meta_json ex_meta_json;
+    Sys.remove output;
+    Printf.printf "File %s generated.\n" ex_meta_json
+  ) else (
+    handle_ml_file output template_fill file;
+    Printf.printf "File %s generated.\n" output)
 
 let generate_file exercise input template_fill file =
-  let input = mk_input exercise input in
   let mapper = mk_mapper file in
+  let input = mk_input exercise input in
   let output = mk_output exercise file in
   let ocf =
-    Printf.sprintf "ocamlfind ppx_tools/rewriter %s %s > %s" mapper input
+    Printf.sprintf "ocamlfind ppx_tools/rewriter %s %s -o %s" mapper input
     output in
-  if (Sys.command ocf = 0) then (
-    Printf.printf "File %s generated.\n" output;
-    change_template_fill output template_fill)
+  if (Sys.command ocf = 0) then
+    handle_generated_file exercise output template_fill file
   else
     Printf.eprintf "File %s could not be generated." output
 
@@ -67,18 +104,18 @@ module Args = struct
 
   let files =
     value & opt_all string ["prelude"; "prepare"; "solution"; "template";
-    "test"] & info ["o"; "output"] ~doc:
-      "Must be one of `prelude', `prepare', `solution', `template' or `test'.
-      Generate only the corresponding file. Can be repeated to give a subset of
-      the usual files."
+    "test"; "meta"] & info ["o"; "output"] ~doc:
+      "Must be one of `prelude', `prepare', `solution', `template', `test' or
+      `meta'. Generate only the corresponding file. Can be repeated to give a
+      subset of the usual files."
 
   let not_files =
     value & opt_all string [] & info ["n"; "no_output"] ~doc:
-      "Must be one of `prelude', `prepare', `solution', `template' or `test'.
-      Don't generate the corresponding file. Can be repeated."
+      "Must be one of `prelude', `prepare', `solution', `template', `test' or
+      `meta'. Don't generate the corresponding file. Can be repeated."
 
   let template_fill =
-    value & opt string "Replace this string by your implementation." & info
+    value & opt string "Replace this string with your implementation." & info
     ["t"; "template_fill"] ~docv:"STRING" ~doc:
       "String to be used in the template in place of the answer."
 
@@ -87,14 +124,6 @@ module Args = struct
     `P "$(tname) generates all files needed by Learn-OCaml for the listed
     exercises. See https://github.com/ocaml-sf/learn-ocaml-autogen/doc for
     more informations on how to write exercises with Learn-OCaml autogen.";
-(*
-    `S "EXAMPLES";
-    `P "$(b, learn-ocaml-autogen easy -i a.ml -n test.ml)";
-    `P "You have an exercise called `easy', your input file is called
-    `easy/a.ml' and you want to generate everything but `easy/test.ml'.";
-    `P "$(b, learn-ocaml-autogen easy -o test -o prelude)";
-    `P "You want to generate only `easy/test.ml' and `easy/prelude.ml'.";
-*)
     `S Manpage.s_bugs;
     `P "If you find any bugs, please report them to
     https://gitub.com/ocaml-sf/learn-ocaml-autogen/issues." ]

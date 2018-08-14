@@ -1,0 +1,20 @@
+opam-version: "2.0"
+name: "learn-ocaml-autogen"
+version: "~dev"
+maintainer: "Loïc Peyrot <lo.peyrot@laposte.net>"
+authors: "Loïc Peyrot <lo.peyrot@laposte.net>"
+license: "MIT License"
+homepage: "https://github.com/ocaml-sf/learn-ocaml-autogen"
+bug-reports: "https://github.com/ocaml-sf/learn-ocaml-autogen/issues"
+depends: [
+  "ocamlfind" {build}
+  "ppx_tools"
+  "ezjsonm"
+  "cmdliner"
+]
+build: make
+run-test: [make "test"]
+dev-repo: "git+ssh://git@github.com/ocaml-sf/learn-ocaml-autogen"
+url {
+  src: "git+ssh://git@github.com/ocaml-sf/learn-ocaml-autogen#development"
+}

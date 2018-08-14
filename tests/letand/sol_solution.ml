@@ -1,3 +1,3 @@
-let rec f x = g (x * 2)
+let rec f x = x
 
-and g x = if x > 100 then x else f x
+and g x = x

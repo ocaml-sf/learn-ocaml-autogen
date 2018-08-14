@@ -1,7 +1,7 @@
 open Test_lib
 open Report
 
-let rec f (x : int -> string -> bool) : int = 3
+let rec f (x : bool) : int = 3
 
 let%prelude rec g y = true
 

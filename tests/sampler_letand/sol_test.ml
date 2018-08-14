@@ -9,26 +9,26 @@ let rec sample_int_int () = (1, 1)
 and sample_int_arr_int () = fun x -> x
 and sample_float_int () = (1., 1)
 
-let exercise_make_tuple =
+let function_make_tuple =
   Section
   ([Text "Function:"; Code "make_tuple"],
   test_function_1_against_solution [%ty : int -> float_int] "make_tuple"
   ~gen:10 [])
 
-let exercise_make_int_tuple =
+let function_make_int_tuple =
   Section
   ([Text "Function:"; Code "make_int_tuple"],
   test_function_1_against_solution [%ty : char -> int_int] "make_int_tuple"
   ~gen:10 [])
 
-let exercise_id_int =
+let function_id_int =
   Section
   ([Text "Function:"; Code "id_int"],
   test_function_1_against_solution [%ty : int -> int] "id_int"
   ~sampler:(fun () -> Random.int 10 mod 2)
   ~gen:10 [])
 
-let exercise_id_float =
+let function_id_float =
   Section
   ([Text "Function:"; Code "id_float"],
   test_function_1_against_solution [%ty : float -> float] "id_float"
@@ -47,7 +47,7 @@ let () =
   set_result @@
     ((ast_sanity_check code_ast) @@
        (fun ()  ->
-          [exercise_make_tuple;
-          exercise_make_int_tuple;
-          exercise_id_int;
-          exercise_id_float]))
+          [function_make_tuple;
+          function_make_int_tuple;
+          function_id_int;
+          function_id_float]))

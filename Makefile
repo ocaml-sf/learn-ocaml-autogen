@@ -1,4 +1,5 @@
-FILES = prelude prepare solution template test
+FILES = prelude prepare solution template test meta
+META = meta.json
 BDIR = bin
 SDIR = src
 TDIR = tests
@@ -14,7 +15,7 @@ NAME = autogen
 EXE = $(NAME)$(SUFFIX)
 BEXE = $(BDIR)/$(NAME)
 
-OCB_LIBS = -package compiler-libs.common -package cmdliner
+OCB_LIBS = -package compiler-libs.common -package cmdliner -package ezjsonm
 OCB_DIR_FLAGS = -I $(SDIR)
 OCB = ocamlbuild $(OCB_LIBS) $(OCB_DIR_FLAGS)
 
@@ -42,5 +43,6 @@ tests_clean :
 	@rm -f $(foreach X, $(TESTS), $(foreach Y, $(FILES), $X$Y.ml))
 	@rm -f $(foreach X, $(TESTS), $(foreach Y, $(FILES), $X$(ASTPREFIX)$Y.ml))
 	@rm -f $(foreach X, $(TESTS), $(foreach Y, $(FILES), $X$(ASTPREFIX)$(SOLPREFIX)$Y.ml))
+	@rm -f $(foreach X, $(TESTS), $X$(META))
 
 clear : clean tests_clean
