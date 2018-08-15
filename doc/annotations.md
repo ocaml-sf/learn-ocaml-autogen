@@ -21,7 +21,7 @@ supported annotations.
   <dd>Transposes the annotated expression directly into
   <code>prepare.ml</code>.</dd>
 
-  <dt><code>%sampler<code></dt>
+  <dt><code>%sampler</code></dt>
   <dd>This annotation is used to define a sampler for specific functions. It
   has to be associated with attributes naming these functions.</dd>
 
@@ -88,6 +88,6 @@ on `let` definitions.
 keywords_specials := let
 ```
 They are:
-- [meta](how-to-write-an-exercise-with-autogen.md#metadata)
-- [sampler](how-to-define-samplers.md#samplers-attached-to-one-function)
-- [var](advanced-features.md#testing-a-variable)
+- [`%meta`](how-to-write-an-exercise-with-autogen.md#metadata)
+- [`%sampler`](how-to-define-samplers.md#samplers-attached-to-one-function)
+- [`%var`](advanced-features.md#testing-a-variable)
