@@ -41,7 +41,6 @@ supported annotations.
   <dd>This annotation is used on a variable definition. It identifies the
   variable definition as an exercise for the student and parses it to a test,
   as well as including it into the template.</dd>
-  <dt><code>
 </dl>
 
 You might have recognized OCaml’s *ppx extensions*. The following describes
@@ -90,5 +89,5 @@ keywords_specials := let
 ```
 They are:
 - [`%meta`](how-to-write-an-exercise-with-autogen.md#metadata)
-- [`%sampler`](how-to-define-samplers.md)
-- [`%var`](advanced-features.md)
+- [`%sampler`](how-to-define-samplers.md#samplers-attached-to-one-function)
+- [`%var`](advanced-features.md#testing-a-variable)
