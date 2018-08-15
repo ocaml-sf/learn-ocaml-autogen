@@ -88,6 +88,6 @@ on `let` definitions.
 keywords_specials := let
 ```
 They are:
-- [`%meta`](how-to-write-an-exercise-with-autogen.md#metadata)
-- [`%sampler`](how-to-define-samplers.md#samplers-attached-to-one-function)
-- [`%var`](advanced-features.md#testing-a-variable)
+- [meta](how-to-write-an-exercise-with-autogen.md#metadata)
+- [sampler](how-to-define-samplers.md#samplers-attached-to-one-function)
+- [var](advanced-features.md#testing-a-variable)
