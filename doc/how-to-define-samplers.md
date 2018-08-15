@@ -49,18 +49,27 @@ let no_zero () = (Random.int 10, Random.int 4 + 1)
 
 In autogen, we declare:
 ```ocaml
-let[%sampler divide_pair] = fun () -> (Random.int 10, Random.int 4 + 1)
+let%sampler[@divide_pair] sample_divide_pair =
+  fun () -> (Random.int 10, Random.int 4 + 1)
 ```
 
-Here, we use brackets around the `%sampler` keyword. This allows us to give the
-name of the function we want the sampler attached to. In the output `test.ml`,
-the optional `~sampler` argument will be instanciated with this anonymous
-function.
+Here, we attach an *attribute* to `%sampler`. This allows us to give the name
+of the function we want the sampler attached to. In the output `test.ml`, the
+optional `~sampler` argument will be instanciated with this anonymous function.
 ```ocaml
 ~sampler:(fun () -> (Random.int 10, Random.int 4 + 1))
 ```
+The name that we give to the sampler, here `sample_divide_pair` is of no
+importance and will be ignored. But, watch out: the sampler has to be defined
+before the function.
 
-You can also give several names inside the brackets, such as
+You can also give several attributes to assign the sampler to several
+functions, such as:
 ```ocaml
-let[%sampler divide_pair multiply_pair add_pair]
+let%sampler[@divide_pair][@multiply_pair][@add_pair] sample_divide_pair = …
 ```
+Obviously, the order of the attributes does not matter, as long as the
+functions appear after the sampler.
+
+There can be several samplers referencing one function. Then, this function
+will have several sets of tests, one for each sampler.

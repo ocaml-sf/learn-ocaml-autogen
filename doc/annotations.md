@@ -5,26 +5,43 @@ Learn-OCaml autogen. If you haven’t, it is advised reading [how to write an
 exercise with autogen](how-to-write-an-exercise-with-autogen.md) first.
 
 Several annotations are used in Learn-OCaml autogen to discriminate some
-expressions from the rest of the program. There are currently four different
+expressions from the rest of the program. There are currently eight different
 supported annotations.
 
 <dl>
-  <dt><code>%prelude</code></dt>
-  <dd>An expression annotated with <code>%prelude</code> will be transposed
-  as-is, but without the annotation, into the <code>prelude.ml</code> file.
-  This applies to every expression annotated as such, and only them.<dd>
-
-  <dt><code>%prepare</code></dt>
-  <dd>Same as previously, but the expression will be written inside
-  <code>prepare.ml</code>.</dd>
-
   <dt><code>%meta</code></dt>
   <dd>This annotation is used to distinguish definitions of metadata fields
   that are to be transposed into <code>meta.json</code>.</dd>
 
-  <dt><code>%[sampler id]<code></dt>
-  <dd>This annotation is used to define a sampler for the function identified
-  as <code>id</code>, regardless of the surrounding sampler for its type.</dd>
+  <dt><code>%prelude</code></dt>
+  <dd>Transposes the annotated expression directly into
+  <code>prelude.ml</code>.</dd>
+
+  <dt><code>%prepare</code></dt>
+  <dd>Transposes the annotated expression directly into
+  <code>prepare.ml</code>.</dd>
+
+  <dt><code>%sampler<code></dt>
+  <dd>This annotation is used to define a sampler for specific functions. It
+  has to be associated with attributes naming these functions.</dd>
+
+  <dt><code>%solution</code></dt>
+  <dd>Transposes the annotated expression directly into
+  <code>solution.ml</code>.</dd>
+
+  <dt><code>%template</code></dt>
+  <dd>Transposes the annotated expression directly into
+  <code>template.ml</code>.</dd>
+
+  <dt><code>%test</code></dt>
+  <dd>Transposes the annotated expression directly into
+  <code>test.ml</code>.</dd>
+
+  <dt><code>%var</code></dt>
+  <dd>This annotation is used on a variable definition. It identifies the
+  variable definition as an exercise for the student and parses it to a test,
+  as well as including it into the template.</dd>
+  <dt><code>
 </dl>
 
 You might have recognized OCaml’s *ppx extensions*. The following describes
@@ -43,8 +60,10 @@ type%prepare tree =
 let%prepare null_tree = Leaf 0
 ```
 
-`%prelude` and `%prepare` annotations can be used on any global definition.
-Valid keywords are:
+We can distinguish two classes of annotations. The first one contains the
+annotations that simply transpose a definiton as is to a file. These are
+`%prelude`, `%prepare`, `%solution`, `%template` and `%test`. They can be used
+on any global definition. Valid keywords are:
 ```
 keywords :=
   | class
@@ -63,14 +82,13 @@ A recursive `let` definition can be defined using the following syntax.
 let%annot rec f x = …
 ```
 
-`%meta` annotation is only valid on a `let` expression.
+The second class is the set of annotations for which the expression is parsed
+before being written in one or more file(s). These annotations are only valid
+on `let` definitions.
 ```
-keywords_meta := let
+keywords_specials := let
 ```
-
-The syntax of `%sampler` is a bit different, as it takes arguments. It is the
-definition of a function, and used as such with keyword `let`:
-`let[%sampler id+] = …`
-*id* is the name of a function of the exercises. This is the one to which the
-sampler will be assigned. The `+` sign indicates that there can be several
-function identifiers.
+They are:
+- [`%meta`](how-to-write-an-exercise-with-autogen.md#metadata)
+- [`%sampler`](how-to-define-samplers.md)
+- [`%var`](advanced-features.md)

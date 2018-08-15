@@ -17,6 +17,8 @@ one. You might be interested in autogen if:
   autogen?](doc/how-to-write-an-exercise-with-autogen.md)
 - [How to define samplers inside Learn-OCaml
   autogen](doc/how-to-define-samplers.md)
+- [Advanced features: testing variables and polymorphic
+  functions](advanced-features.md)
 
 ## Reference
 

@@ -90,7 +90,11 @@ let mk_report = function
       if arg_number > 4 then
         raise Location.(Error (
           error (Printf.sprintf "Too many parameters for function \
-            %s: 4 maximum accepted for automatic generation." name)));
+            %s: 4 maximum accepted for automatic generation." name)))
+      else if arg_number = 0 then
+        raise Location.(Error (
+          error (Printf.sprintf "%s name is a variable, it should be annotated
+          with %%var." name)));
       let which_test = Printf.sprintf
         "test_function_%s_against_solution" (string_of_int arg_number) in
       mk_test_function name fun_ty which_test
@@ -121,17 +125,13 @@ let test_function_of_vb rec_flag = function
       mk_test (Function (fun_name, arg_number, ty))
   | _ -> raise Location.(Error (error "Not a function."))
 
-let test_variable_of_vb vb =
-  let error () =
-    raise Location.(Error (error "Variable not annotated.")) in
-  match vb with
-  | {pvb_pat = {ppat_desc = Ppat_var {txt = name}}; pvb_expr = pexp} ->
-      begin match pexp with
-      | {pexp_desc = Pexp_constraint (_, ty)} ->
-          mk_test (Variable (name, ty))
-      | _ -> error ()
-      end
-  | _ -> error ()
+let test_variable_of_vb = function
+  | {pvb_pat = {ppat_desc = Ppat_var {txt = name}};
+    pvb_expr = {pexp_desc = Pexp_constraint (_, ty)}} ->
+  (* | {pvb_pat = {ppat_desc = Ppat_constraint (
+    {ppat_desc = Ppat_var {txt = name}}, ty)}} -> *)
+      mk_test (Variable (name, ty))
+  | _ -> raise Location.(Error (error "Variable not annotated."))
 
 let test_reference_of_vb = function
   | {pvb_pat = {ppat_desc = Ppat_var {txt = name}}; pvb_expr = {pexp_desc}} ->
