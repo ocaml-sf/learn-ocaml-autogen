@@ -156,10 +156,9 @@ test functions other than manually on the generated test file.
 ## Metadata
 
 Finally, autogen also generates the `meta.json` file containing the metadata of
-the exercise such as the difficulty and the authors. The fields required in
-the input file to fill in `meta.json` are not all of those required. Some are
-filled automatically, but you can still give them another value than the
-default one.
+the exercise such as the difficulty and the authors. Some fields have a default
+value, but you can still replace it. If a field without default value is not
+fill in, the value will be `null` inside `meta.json`. This should be avoided.
 
 Here is a list of all fields with the expected type and the default value when
 applicable.
