@@ -48,10 +48,10 @@ learn-ocaml-autogen.install :
 	@echo ']' >> $@
 
 install : all learn-ocaml-autogen.install
-	@opam-installer --prefix `opam var prefix` learn-ocaml-autogen.install
+	opam-installer --prefix `opam var prefix` learn-ocaml-autogen.install
 
 remove : learn-ocaml-autogen.install
-	@opam-installer --prefix `opam var prefix` -u learn-ocaml-autogen.install
+	opam-installer --prefix `opam var prefix` -u learn-ocaml-autogen.install
 
 clean : remove
 	$(OCB) -clean

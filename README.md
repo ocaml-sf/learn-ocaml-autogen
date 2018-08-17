@@ -10,6 +10,10 @@ one. You might be interested in autogen if:
    - if your exercise is more complex, you can use the generated files as a
      basis for your implementation.
 
+## Installation
+
+The procedure to install autogen is described [here](doc/installation.md).
+
 ## Howtos
 
 - [How to use Learn-OCaml autogen?](doc/usage.md)

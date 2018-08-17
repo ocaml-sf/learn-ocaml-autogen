@@ -11,8 +11,12 @@ depends: [
   "ppx_tools"
   "ezjsonm"
   "cmdliner"
+  "opam-installer"
 ]
 install: [make "install"]
 remove: [make "clean"]
 run-test: [make "test"]
 dev-repo: "git+ssh://git@github.com/ocaml-sf/learn-ocaml-autogen"
+url {
+  src: "git+file:///home/eemency/Documents/Taf/autogen#master"
+}
