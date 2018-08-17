@@ -9,10 +9,12 @@ SUFFIX = .native
 SOLPREFIX = sol_
 MAPPREFIX = mapper_
 ASTPREFIX = ptree_
-TARGETS = $(addsuffix $(SUFFIX), $(addprefix $(MAPPREFIX), $(FILES)))
+MAPPERS = $(addprefix $(MAPPREFIX), $(FILES))
+TARGETS = $(addsuffix $(SUFFIX), $(MAPPERS))
 
-NAME = autogen
-EXE = $(NAME)$(SUFFIX)
+MAIN = autogen
+EXE = $(MAIN)$(SUFFIX)
+NAME = learn-ocaml-autogen
 BEXE = $(BDIR)/$(NAME)
 
 OCB_LIBS = -package compiler-libs.common -package cmdliner -package ezjsonm
@@ -23,7 +25,7 @@ TESTS = $(wildcard $(TDIR)/*/)
 
 OCF = ocamlfind ppx_tools/rewriter
 
-.PHONY : all clean clear test tests_clean
+.PHONY : all clean clear test tests_clean learn-ocaml-autogen.install install remove
 
 all : $(TARGETS)
 	$(OCB) $(EXE)
@@ -35,9 +37,26 @@ all : $(TARGETS)
 test : all
 	$(TDIR)/run-tests
 
-clean :
+learn-ocaml-autogen.install :
+	@echo 'bin: [' > $@
+	@$(foreach X, $(TARGETS), echo '  "$(BDIR)/$X" {"$X"}' >> $@;)
+	@echo '  "$(BEXE)" {"$(NAME)"}' >> $@
+	@echo ']' >> $@
+	@echo 'lib: [' >> $@
+	@$(foreach M, $(MAPPERS), $(foreach EXT, .cmi .cmo .cmx, \
+	  echo '  "_build/src/$M$(EXT)" {"$M$(EXT)"}' >> $@;))
+	@echo ']' >> $@
+
+install : all learn-ocaml-autogen.install
+	@opam-installer --prefix `opam var prefix` learn-ocaml-autogen.install
+
+remove : learn-ocaml-autogen.install
+	@opam-installer --prefix `opam var prefix` -u learn-ocaml-autogen.install
+
+clean : remove
 	$(OCB) -clean
-	rmdir $(BDIR)
+	@rm -rf rmdir $(BDIR)
+	@rm -f learn-ocaml-autogen.install
 
 tests_clean :
 	@rm -f $(foreach X, $(TESTS), $(foreach Y, $(FILES), $X$Y.ml))
