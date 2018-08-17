@@ -18,7 +18,13 @@ Create a package pinned to this directory.
 $ opam pin add learn-ocaml-autogen .
 ```
 Installation should follow. Before learn-ocaml-autogen, missing dependencies
-will also be installed. That’s it!
+will also be installed.
+You might need to run the following to get autogen in your path.
+```
+$ eval $(opam env)
+```
+
+That’s it!
 
 ## Using opam
 
