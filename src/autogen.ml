@@ -54,7 +54,7 @@ let indent_meta_json meta_json =
     spread_left_bracket; break_lines; spread_right_bracket];
   let stick_back_lists =
     Printf.sprintf
-    "awk '/\\[/{printf \"%%s\",$0;next} 1' %s | tee %s"(* > /dev/null *)
+    "awk '/\\[/{printf \"%%s\",$0;next} 1' %s | tee %s > /dev/null"
     meta_json meta_json in
   exec stick_back_lists (Printf.sprintf "Error while modifying %s." meta_json);
   let indent = "'/^[^{}]/{s/^/  /;}'" in sed indent meta_json;

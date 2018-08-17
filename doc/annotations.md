@@ -21,6 +21,10 @@ supported annotations.
   <dd>Transposes the annotated expression directly into
   <code>prepare.ml</code>.</dd>
 
+  <dt><code>%ref</code></dt>
+  <dd>This annotation is used to define a test checking that a reference has
+  the expected value at the end of the execution of the code.</dd>
+
   <dt><code>%sampler</code></dt>
   <dd>This annotation is used to define a sampler for specific functions. It
   has to be associated with attributes naming these functions.</dd>
@@ -60,7 +64,7 @@ let%prepare null_tree = Leaf 0
 ```
 
 We can distinguish two classes of annotations. The first one contains the
-annotations that simply transpose a definiton as is to a file. These are
+annotations that simply transpose a definition as is to a file. These are
 `%prelude`, `%prepare`, `%solution`, `%template` and `%test`. They can be used
 on any global definition. Valid keywords are:
 ```
@@ -90,4 +94,5 @@ keywords_specials := let
 They are:
 - [`%meta`](how-to-write-an-exercise-with-autogen.md#metadata)
 - [`%sampler`](how-to-define-samplers.md#samplers-attached-to-one-function)
+- [`%ref`](advanced-features.md#testing-a-reference)
 - [`%var`](advanced-features.md#testing-a-variable)

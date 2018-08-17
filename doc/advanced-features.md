@@ -15,6 +15,22 @@ let%var x : float = sqrt 2.
 The behaviour of autogen will be very similar to when dealing with functions,
 only the test will be a bit different, as we are testing a unique value.
 
+## Testing a reference
+
+To test that a reference has a certain value, you can use `%ref`.
+```ocaml
+let%ref r : int = 10
+```
+Here, r is supposed to be the name of an `int ref`, whose value is expected to
+be 10 at the end of the execution. This syntax only defines a test on the
+reference, it doesn’t create a template for `r`, nor puts its value in
+`solution.ml`.
+
+Testing a reference is
+[more subtle](https://github.com/ocaml-sf/learn-ocaml/issues/72) than testing a
+variable, and might require you to write some more code into `test.ml` using
+`%test` extension.
+
 ## Testing polymorphic functions
 
 For now, we have only defined tests on *monomorphic* functions. What if we want
