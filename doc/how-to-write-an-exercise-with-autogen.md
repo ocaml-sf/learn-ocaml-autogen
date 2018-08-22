@@ -136,20 +136,56 @@ let () =
   fun () -> [exercise_fact; exercise_fibonacci; exercise_foo]
 ```
 
-We use the `test_function_n_against_solution` function to test the student’s
-answer against our solutions. `n` is the number of arguments of the function
+The `test_function_n_against_solution` function is used to test the student’s
+answer against the solutions. `n` is the number of arguments of the function
 and is automatically deduced from the type. Watch out, though, that Learn-OCaml
-autogen does not support functions with more than four arguments, because it
-would add complexity to autogen’s input files. The `%ty` extension is generated
-from the type annotations.
+autogen does not support functions with more than [four
+arguments](https://github.com/ocaml-sf/learn-ocaml-autogen/issues/5), as well
+as single values. The `%ty` extension is generated from the type annotations.
 
 Tests are done upon 10 generated inputs. You can change this amount by
 updating the `gen` argument in the generated file. You can also add inputs that
 will always be tested in the list next to it.
 
+To test functions that don’t operate only on basic types, you have to define
+samplers. See [how to define samplers](how-to-define-samplers.md).
+
+Apart from `~sampler:`, you can’t instantiate the optional parameters of the
+test functions other than manually on the generated test file.
+
+## Metadata
+
+Finally, autogen also generates the `meta.json` file containing the metadata of
+the exercise such as the difficulty and the authors. Some fields have a default
+value, but you can still replace it. If a field without default value is not
+fill in, the value will be `null` inside `meta.json`. This should be avoided.
+
+Here is a list of all fields with the expected type and the default value when
+applicable.
+- `learnocaml_version`: string (default="2")
+- `kind`: string (default="exercise")
+- `stars`: int
+- `title`: string
+- `short_description`: string
+- `identifier`: string
+- `author`: string * string
+- `authors` : (string * string) list
+
+And here is a example of metadata definition inside `input.ml`.
+```ocaml
+let%meta stars = 5
+let%meta title = "Very hard exercise"
+let%meta short_description = "I bet you can’t do it!"
+let%meta identifier = "very_hard"
+let%meta author = ("Me", "me@myself.com")
+```
+
+If there are several authors, you can write them directly inside a list under
+`authors`. If there is only one, you can use `author`.
+
 ## About type annotation
 
-It is important that you remember to annotate solution functions. This allows
+It is important that you remember to annotate exercise functions. This allows
 the generation of the `%ty` extension in the arguments of the test function.
 The style supported is
 ```ocaml
@@ -157,18 +193,19 @@ let f (arg_1 : type_1) (arg_2 : type_2) … (arg_n : type_n) : return_type = …
 ```
 There is no need to give type annotation to prelude and prepare functions. If
 you wish to do so, be aware that these annotations will be transcribed as such
-inside `prelude.ml` or `prepare.ml`.
+inside `prelude.ml` or `prepare.ml`. Autogen will not accept annotations on
+metadata fields definitions.
 
 ## Remarks
 
 The order of the expressions in the file matters only between expressions with
 the same goal. Prelude expressions will be written in the same order as in
-`input.ml` inside `prelude.ml`. Same for `prepare.ml` and solution functions.
+`input.ml` inside `prelude.ml`. Same for `prepare.ml` and exercise functions.
 But between files, order does not matter. Prelude, prepare and solution
-expressions can be mixed together. We could put every prelude function at the
-end of the file, and prepare at the beginning.
+expressions can be mixed together. You could also put every prelude function at
+the end of the file, and prepare at the beginning.
 
-We advise to keep a constant style of ordering. For example, always having
+It is advised to keep a constant style of ordering. For example, always having
 prelude and prepare expressions at the beginning of `input.ml`. Most
 importantly, it is a good idea to keep expressions together according to their
 destination files. This avoids confusion on bigger files.

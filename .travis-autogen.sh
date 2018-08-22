@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Inspired from https://github.com/ocaml-sf/learn-ocaml/.travis-learnocaml.sh
+
 . .travis-ocaml.sh
 
 install_bubblewrap_on_linux () {
